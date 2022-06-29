@@ -2,9 +2,9 @@ import argparse
 import asyncio
 import logging
 import curses
-from typing import Dict
+from typing import Dict, Optional
 
-from codaio_exporter.export import export_all_docs
+from codaio_exporter.export import export_all_docs, export_doc
 
 class ProgressDisplay:
     def __init__(self) -> None:
@@ -31,13 +31,26 @@ async def async_main() -> None:
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.WARN)
 
     parser = argparse.ArgumentParser(description='Export tables from coda.io')
-    parser.add_argument('api_token', type=str)
-    parser.add_argument('dest_dir', type=str)
+    parser.add_argument('--api-token', type=str)
+    parser.add_argument('--dest-dir', type=str, help="Destination directory to export to")
+    parser.add_argument('--doc-id', type=str, help="Limit export to the tables in the document with the given id")
+
     args = parser.parse_args()
 
     progress_display = ProgressDisplay()
 
-    await export_all_docs(args.api_token, args.dest_dir, progress_display.progress_callback)
+    if args.api_token is None:
+        print("Please specify the --api-token parameter")
+        exit(1)
+
+    if args.dest_dir is None:
+        print("Please specify the --dest-dir parameter")
+        exit(1)
+    
+    if args.doc_id is None:
+        await export_all_docs(args.api_token, args.dest_dir, progress_display.progress_callback)
+    else:
+        await export_doc(args.api_token, args.dest_dir, args.doc_id, progress_display.progress_callback)
 
 def main() -> None:
     asyncio.run(async_main())

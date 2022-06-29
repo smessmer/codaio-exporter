@@ -13,5 +13,9 @@ class API:
         self._client = client
 
     async def get_all_docs(self) -> AsyncGenerator[DocAPI, None]:
-        async for doc in self._client.get("/docs"):
+        async for doc in self._client.get_list("/docs"):
             yield DocAPI(self._client, doc)
+
+    async def get_doc(self, doc_id: str) -> DocAPI:
+        doc = await self._client.get_item(f"/docs/{doc_id}")
+        return DocAPI(self._client, doc)

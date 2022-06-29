@@ -26,5 +26,5 @@ class DocAPI:
         return parse_str(self._data["folder"]["name"])
 
     async def get_all_tables(self) -> AsyncGenerator[TableAPI, None]:
-        async for table in self._client.get(f"{self._api_root}/tables"):
+        async for table in self._client.get_list(f"{self._api_root}/tables"):
             yield TableAPI(self._client, self._api_root, table)

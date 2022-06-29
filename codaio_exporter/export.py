@@ -45,6 +45,12 @@ async def export_all_docs(api_token: str, dest_path: str, progress_callback: Opt
         documents = await collect(api.get_all_docs())
         await gather_raise_first_error_after_all_tasks_complete(*(_export_doc(dest_path, doc, progress_callback) for doc in documents))
 
+async def export_doc(api_token: str, dest_path: str, doc_id: str, progress_callback: Optional[ProgressCallback] = None) -> None:
+    os.makedirs(dest_path, exist_ok=False)
+    async with make_api(api_token) as api:
+        doc = await api.get_doc(doc_id)
+        await _export_doc(dest_path, doc, progress_callback)
+
 async def _export_doc(dest_path: str, doc: DocAPI, progress_callback: Optional[ProgressCallback]) -> None:
     doc_path = _doc_path(dest_path, doc)
     os.makedirs(doc_path, exist_ok=False)

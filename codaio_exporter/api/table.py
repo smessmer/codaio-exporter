@@ -44,9 +44,9 @@ class TableAPI:
             raise Exception(f"Unknown table type {parsed}")
 
     async def get_all_columns(self) -> AsyncGenerator[ColumnAPI, None]:
-        async for column in self._client.get(f"{self._api_root}/columns"):
+        async for column in self._client.get_list(f"{self._api_root}/columns"):
             yield ColumnAPI(column)
 
     async def get_all_rows(self) -> AsyncGenerator[RowAPI, None]:
-        async for row in self._client.get(f"{self._api_root}/rows"):
+        async for row in self._client.get_list(f"{self._api_root}/rows"):
             yield RowAPI(row)

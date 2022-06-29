@@ -35,8 +35,22 @@ class Client:
         self._session = session
         self._authorization = {"Authorization": f"Bearer {api_token}"}
 
+    async def get_item(self, endpoint: str, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+        logging.info(f"GET {endpoint} {str(data)}")
 
-    async def get(self, endpoint: str, data: Dict[str, Any] = {}) -> AsyncGenerator[Any, None]:
+        async with self._session.get(_API_ENDPOINT + endpoint, params=data, headers=self._authorization) as response:
+            try:
+                await _handle_potential_error(response)
+                content = await response.json()
+            except aiohttp.client_exceptions.ContentTypeError as e:
+                content_text = await response.text()
+                raise Exception(f"Content type error for {content_text}", e)
+
+            logging.info(f"GET {endpoint}: responded")
+            return parse_dict_str_any(content)
+
+
+    async def get_list(self, endpoint: str, data: Dict[str, Any] = {}) -> AsyncGenerator[Any, None]:
         logging.info(f"GET {endpoint} {str(data)}")
 
         data["limit"] = _MAX_PAGE_SIZE
