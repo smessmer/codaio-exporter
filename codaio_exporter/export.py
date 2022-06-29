@@ -10,10 +10,8 @@ from codaio_exporter.api.table import TableAPI
 from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
 from codaio_exporter.table import Table, parse_table_from_api
+from codaio_exporter.progress import ProgressCallback
 
-
-# Parameters: (doc_name, progress, progress_total)
-ProgressCallback = Callable[[str, int, int], None]
 
 class ProgressHandler:
     def __init__(self, name: str, callback: Optional[ProgressCallback]):
@@ -74,7 +72,7 @@ async def _export_table(doc_path: str, table: TableAPI, progress_handler: Progre
         collect(table.get_all_rows())
     )
     _export_columns(table_path, columns)
-    _export_rows(table_path, columns, rows)
+    _export_rows(table_path, table, columns, rows)
     progress_handler.increment_done()
 
 def _export_columns(table_path: str, columns: List[ColumnAPI]) -> None:
@@ -84,8 +82,8 @@ def _export_columns(table_path: str, columns: List[ColumnAPI]) -> None:
         with open(os.path.join(columns_path, _column_name_for_path(column) + ".json"), 'w') as file:
             file.write(str(column.raw_data()))
 
-def _export_rows(table_path: str, columns: List[ColumnAPI], rows: List[RowAPI]) -> None:
-    table = parse_table_from_api(columns, rows)
+def _export_rows(table_path: str, table_api: TableAPI, columns: List[ColumnAPI], rows: List[RowAPI]) -> None:
+    table = parse_table_from_api(table_api.id(), columns, rows)
     table_csv = table.to_csv()
     table_html = table.to_html()
     table_json = table.to_json()

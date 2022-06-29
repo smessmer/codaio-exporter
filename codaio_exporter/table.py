@@ -20,6 +20,7 @@ class Row(DataClassJsonMixin):
 
 @dataclass
 class Table(DataClassJsonMixin):
+    id: str
     columns: List[Column]
     rows: List[Row]
 
@@ -41,11 +42,12 @@ class Table(DataClassJsonMixin):
         return f"<html><head/><body>{table_html}</body></html>"
 
 
-def parse_table_from_api(columns: List[ColumnAPI], rows: List[RowAPI]) -> Table:
+def parse_table_from_api(table_id: str, columns: List[ColumnAPI], rows: List[RowAPI]) -> Table:
     rows.sort(key=lambda row: row.index())
     parsed_columns = [_parse_column(column) for column in columns]
     parsed_rows = [_parse_row(parsed_columns, row) for row in rows]
     return Table(
+        id=table_id,
         columns=parsed_columns,
         rows=parsed_rows,
     )
