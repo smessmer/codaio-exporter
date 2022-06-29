@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 from typing import List, Optional
 from io import StringIO
 import html, csv
@@ -7,30 +8,25 @@ from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
 
 
+@dataclass_json
 @dataclass
 class Column:
     id: str
     name: str
     formula: Optional[str]
 
+@dataclass_json
 @dataclass
 class Row:
     cells: List[str]
 
+@dataclass_json
 @dataclass
 class Table:
     columns: List[Column]
     rows: List[Row]
 
-    def to_csv_with_column_ids(self) -> str:
-        output = StringIO()
-        wr = csv.writer(output, quoting=csv.QUOTE_ALL)
-        wr.writerow([column.id for column in self.columns])
-        for row in self.rows:
-            wr.writerow(row.cells)
-        return output.getvalue()
-
-    def to_csv_with_column_names(self) -> str:
+    def to_csv(self) -> str:
         output = StringIO()
         wr = csv.writer(output, quoting=csv.QUOTE_ALL)
         wr.writerow([column.name for column in self.columns])

@@ -74,13 +74,10 @@ def _export_columns(table_path: str, columns: List[ColumnAPI]) -> None:
 
 def _export_rows(table_path: str, columns: List[ColumnAPI], rows: List[RowAPI]) -> None:
     table = parse_table_from_api(columns, rows)
-    table_csv_ids = table.to_csv_with_column_ids()
-    table_csv_names = table.to_csv_with_column_names()
+    table_csv = table.to_csv()
     table_html = table.to_html()
-    with open(os.path.join(table_path, "values.with_column_ids.csv"), 'w') as file:
-        file.write(table_csv_ids)
-    with open(os.path.join(table_path, "values.with_column_names.csv"), 'w') as file:
-        file.write(table_csv_names)
+    with open(os.path.join(table_path, "values.csv"), 'w') as file:
+        file.write(table_csv)
     with open(os.path.join(table_path, "values.html"), 'w') as file:
         file.write(table_html)
 

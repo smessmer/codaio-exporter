@@ -8,6 +8,7 @@ authors = ["Sebastian Messmer <mail@smessmer.de>"]
 python = "^3.10"
 ensure = "^1.0.2"
 aiohttp = "^3.8.1"
+dataclasses-json = "^0.5.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
