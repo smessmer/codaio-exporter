@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from codaio_exporter.api.parse import parse_str
 
-class Column:
+class ColumnAPI:
     def __init__(self, data: Dict[str, Any]):
         self._data = data
 

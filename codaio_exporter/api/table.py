@@ -1,8 +1,8 @@
 from typing import Dict, Any, AsyncGenerator
 from enum import Enum
 from codaio_exporter.api.parse import parse_str
-from codaio_exporter.api.column import Column
-from codaio_exporter.api.row import Row
+from codaio_exporter.api.column import ColumnAPI
+from codaio_exporter.api.row import RowAPI
 from codaio_exporter.api.client import Client
 
 
@@ -19,7 +19,7 @@ class TableType(Enum):
             raise Exception(f"Unknown table type {self}")
 
 
-class Table:
+class TableAPI:
     def __init__(self, client: Client, doc_api_root: str, data: Dict[str, Any]):
         self._data = data
         self._client = client
@@ -43,10 +43,10 @@ class Table:
         else:
             raise Exception(f"Unknown table type {parsed}")
 
-    async def get_all_columns(self) -> AsyncGenerator[Column, None]:
+    async def get_all_columns(self) -> AsyncGenerator[ColumnAPI, None]:
         async for column in self._client.get(f"{self._api_root}/columns"):
-            yield Column(column)
+            yield ColumnAPI(column)
 
-    async def get_all_rows(self) -> AsyncGenerator[Row, None]:
+    async def get_all_rows(self) -> AsyncGenerator[RowAPI, None]:
         async for row in self._client.get(f"{self._api_root}/rows"):
-            yield Row(row)
+            yield RowAPI(row)

@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from codaio_exporter.api.doc import Doc
+from codaio_exporter.api.doc import DocAPI
 from codaio_exporter.api.client import Client, make_client
 
 @asynccontextmanager
@@ -12,6 +12,6 @@ class API:
     def __init__(self, client: Client):
         self._client = client
 
-    async def get_all_docs(self) -> AsyncGenerator[Doc, None]:
+    async def get_all_docs(self) -> AsyncGenerator[DocAPI, None]:
         async for doc in self._client.get("/docs"):
-            yield Doc(self._client, doc)
+            yield DocAPI(self._client, doc)
