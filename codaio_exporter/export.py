@@ -44,7 +44,7 @@ async def export_all_docs(api_token: str, dest_path: str, progress_callback: Opt
 async def _export_doc(dest_path: str, doc: DocAPI, progress_callback: Optional[ProgressCallback]) -> None:
     doc_path = _doc_path(dest_path, doc)
     os.makedirs(doc_path, exist_ok=False)
-    with open(os.path.join(doc_path, "doc.json"), 'w') as file:
+    with open(os.path.join(doc_path, "api_object.json"), 'w') as file:
         file.write(str(doc.raw_data()))
 
     num_tables = await doc.get_num_tables()
@@ -55,7 +55,7 @@ async def _export_table(doc_path: str, table: TableAPI, progress_handler: Progre
     progress_handler.increment_total()
     table_path = _table_path(doc_path, table)
     os.makedirs(table_path, exist_ok=False)
-    with open(os.path.join(table_path, "table.json"), 'w') as file:
+    with open(os.path.join(table_path, "api_object.json"), 'w') as file:
         file.write(str(table.raw_data()))
     columns, rows = await asyncio.gather(
         collect(table.get_all_columns()),
@@ -76,10 +76,13 @@ def _export_rows(table_path: str, columns: List[ColumnAPI], rows: List[RowAPI]) 
     table = parse_table_from_api(columns, rows)
     table_csv = table.to_csv()
     table_html = table.to_html()
-    with open(os.path.join(table_path, "values.csv"), 'w') as file:
+    table_json = table.to_json()
+    with open(os.path.join(table_path, "table.csv"), 'w') as file:
         file.write(table_csv)
-    with open(os.path.join(table_path, "values.html"), 'w') as file:
+    with open(os.path.join(table_path, "table.html"), 'w') as file:
         file.write(table_html)
+    with open(os.path.join(table_path, "table.json"), 'w') as file:
+        file.write(table_json)
 
 def _doc_path(root_path: str, doc: DocAPI) -> str:
     folder_name = _remove_path_unsafe_characters(doc.folder_name() + " " + doc.folder_id())
