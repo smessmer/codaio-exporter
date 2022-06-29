@@ -28,7 +28,3 @@ class DocAPI:
     async def get_all_tables(self) -> AsyncGenerator[TableAPI, None]:
         async for table in self._client.get(f"{self._api_root}/tables"):
             yield TableAPI(self._client, self._api_root, table)
-    
-    async def get_num_tables(self) -> int:
-        # TODO
-        return 0
