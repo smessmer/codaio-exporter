@@ -10,52 +10,47 @@ from codaio_exporter.api.table import TableAPI
 from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
 from codaio_exporter.table import Table, parse_table_from_api
-from codaio_exporter.progress import ProgressCallback
+from codaio_exporter.progress import ProgressDisplay, ProgressBar
 
 
 class ProgressHandler:
-    def __init__(self, name: str, callback: Optional[ProgressCallback]):
-        self._name = name
-        self._done = 0
-        self._total = 0
-        self._callback = callback
-        self._call()
+    def __init__(self, name: str, progress_display: Optional[ProgressDisplay]):
+        self._bar = None
+        if progress_display is not None:
+            self._bar = progress_display.add_task(name, total=None)
     
     def increment_done(self) -> None:
-        self._done += 1
-        self._call()
+        if self._bar is not None:
+            self._bar.increment_progress()
     
     def increment_total(self) -> None:
-        self._total += 1
-        self._call()
-    
-    def _call(self) -> None:
-        if self._callback is not None:
-            self._callback(self._name, self._done, self._total)
+        if self._bar is not None:
+            # No update=False because we don't want to keep the spinning animation instead of displaying the total until the first call of increment_done()
+            self._bar.increment_total(update=False)
 
 
-async def export_all_docs(api_token: str, dest_path: str, progress_callback: Optional[ProgressCallback] = None) -> None:
+async def export_all_docs(api_token: str, dest_path: str, progress_display: Optional[ProgressDisplay] = None) -> None:
     os.makedirs(dest_path, exist_ok=False)
     async with make_api(api_token) as api:
         # We could use concurrent_async_for for more concurrency (i.e. already downloading data for the first document while we're still finding new documents)
         # but that looks a bit weird in the UI since the `max_progress` property of the progress bar would keep increasing. So instead, let's enumerate
         # all documents first and then start querying the data.
         documents = await collect(api.get_all_docs())
-        await gather_raise_first_error_after_all_tasks_complete(*(_export_doc(dest_path, doc, progress_callback) for doc in documents))
+        await gather_raise_first_error_after_all_tasks_complete(*(_export_doc(dest_path, doc, progress_display) for doc in documents))
 
-async def export_doc(api_token: str, dest_path: str, doc_id: str, progress_callback: Optional[ProgressCallback] = None) -> None:
+async def export_doc(api_token: str, dest_path: str, doc_id: str, progress_display: Optional[ProgressDisplay] = None) -> None:
     os.makedirs(dest_path, exist_ok=False)
     async with make_api(api_token) as api:
         doc = await api.get_doc(doc_id)
-        await _export_doc(dest_path, doc, progress_callback)
+        await _export_doc(dest_path, doc, progress_display)
 
-async def _export_doc(dest_path: str, doc: DocAPI, progress_callback: Optional[ProgressCallback]) -> None:
+async def _export_doc(dest_path: str, doc: DocAPI, progress_display: Optional[ProgressDisplay]) -> None:
     doc_path = _doc_path(dest_path, doc)
     os.makedirs(doc_path, exist_ok=False)
     with open(os.path.join(doc_path, "api_object.json"), 'w') as file:
         file.write(str(doc.raw_data()))
 
-    progress_handler = ProgressHandler(doc.name(), progress_callback)
+    progress_handler = ProgressHandler(doc.name(), progress_display)
     # We could use concurrent_async_for for more concurrency (i.e. already downloading data for the first tables while we're still finding new tables)
     # but that looks a bit weird in the UI since the `max_progress` property of the progress bar would keep increasing. So instead, let's enumerate
     # all tables first and then start querying the data.

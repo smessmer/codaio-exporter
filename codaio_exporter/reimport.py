@@ -7,46 +7,41 @@ from codaio_exporter.utils.generator import collect
 from codaio_exporter.api import make_api
 from codaio_exporter.api.doc import DocAPI
 from codaio_exporter.api.table import TableAPI, TableType
-from codaio_exporter.progress import ProgressCallback
+from codaio_exporter.progress import ProgressDisplay
 from codaio_exporter.table import Table, Row
 from codaio_exporter.utils.gather import gather_cancel_on_first_error, gather_raise_first_error_after_all_tasks_complete
 
 
 class ProgressHandler:
-    def __init__(self, num_tables: int, callback: Optional[ProgressCallback]):
-        self._total = num_tables
-        self._progress_load_table = 0
-        self._progress_compatibility_check = 0
-        self._progress_cleared_table = 0
-        self._progress_reimported = 0
-        self._callback = callback
-        self._call()
+    def __init__(self, num_tables: int, progress_display: Optional[ProgressDisplay]):
+        self._progress_load_table = None
+        self._progress_compatibility_check = None
+        self._progress_cleared_table = None
+        self._progress_reimported = None
+        if progress_display is not None:
+            self._progress_load_table = progress_display.add_task("Load Table", total=num_tables)
+            self._progress_compatibility_check = progress_display.add_task("Compatibility Check", total=num_tables)
+            self._progress_cleared_table = progress_display.add_task("Cleared Table", total=num_tables)
+            self._progress_reimported = progress_display.add_task("Reimported", total=num_tables)
     
     def increment_load_table(self) -> None:
-        self._progress_load_table += 1
-        self._call()
+        if self._progress_load_table is not None:
+            self._progress_load_table.increment_progress()
     
     def increment_compatibility_check(self) -> None:
-        self._progress_compatibility_check += 1
-        self._call()
+        if self._progress_compatibility_check is not None:
+            self._progress_compatibility_check.increment_progress()
     
     def increment_cleared_table(self) -> None:
-        self._progress_cleared_table += 1
-        self._call()
+        if self._progress_cleared_table is not None:
+            self._progress_cleared_table.increment_progress()
     
     def increment_reimported(self) -> None:
-        self._progress_reimported += 1
-        self._call()
-
-    def _call(self) -> None:
-        if self._callback is not None:
-            self._callback("A: Load Table", self._progress_load_table, self._total)
-            self._callback("B: Compatibility check", self._progress_compatibility_check, self._total)
-            self._callback("C: Cleared table", self._progress_cleared_table, self._total)
-            self._callback("D: Finished reimport", self._progress_reimported, self._total)
+        if self._progress_reimported is not None:
+            self._progress_reimported.increment_progress()
 
 
-async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progress_callback: Optional[ProgressCallback] = None) -> None:
+async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progress_display: Optional[ProgressDisplay] = None) -> None:
     async with make_api(api_token) as api:
         doc = await api.get_doc(dest_doc_id)
 
@@ -59,7 +54,7 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
                 tables.append(Table.from_json(json))
         print("Reading tables from export...done")
 
-        progress_handler = ProgressHandler(len(tables), progress_callback)
+        progress_handler = ProgressHandler(len(tables), progress_display)
 
         print("Importing tables to coda.io...")
         await gather_cancel_on_first_error(*(_check_table_is_compatible(doc, table, progress_handler) for table in tables))

@@ -76,7 +76,7 @@ class AdaptiveRateLimit:
                 
                 try:
                     if is_backoff:
-                        logging.warning(f"Request {request_index}: Attempting recovery")
+                        logging.warning(f"Request {request_index}: Attempting another request")
                     logging.warning(f"Request {request_index}: Running request")
                     result = await func(*args, **kwds)
                     if is_backoff:
@@ -84,11 +84,11 @@ class AdaptiveRateLimit:
                         # Otherwise, race conditions could cause some requests to set _State.backoff and another request to immediately
                         # reset it without any actual backoff period.
                         self._state = _State.normal
-                        logging.warning(f"Request {request_index}: Attempting recovery...succeeded. Backoff ended.")
+                        logging.warning(f"Request {request_index}: Attempting another request...succeeded. Backoff ended.")
                     return result
                 except self._backoff_exception:
                     if is_backoff:
-                        logging.warning(f"Request {request_index}: Attempting recovery...failed. Backing off again.")
+                        logging.warning(f"Request {request_index}: Attempting another request...still hitting rate limit. Backing off again.")
                         self._state = _State.backoff
                     elif self._state == _State.normal:
                         logging.warning(f"Request {request_index}: Rate limit exception detected. Backing off.")
@@ -107,7 +107,7 @@ class AdaptiveRateLimit:
                     # An unrelated error happened
                     if is_backoff:
                         # But we're the task responsible for recovering from _State.recovery
-                        logging.warning(f"Request {request_index}: Attempting recovery...failed with unrelated error. Waking another recovery task.")
+                        logging.warning(f"Request {request_index}: Attempting another request...failed with error unrelated to rate limit. Waking a different request.")
                         # Sleep for a bit in case the server has temporary issues
                         await asyncio.sleep(1)
                         # Setting the state back to _State.backoff but without a timeout.
