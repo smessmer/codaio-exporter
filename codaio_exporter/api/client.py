@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from codaio_exporter.api.parse import parse_dict_str_any
 from codaio_exporter.utils.ratelimit import AdaptiveRateLimit
 from codaio_exporter.utils.retry import retry
+from codaio_exporter.utils.concurrencylimit import ConcurrencyLimit
 
 @asynccontextmanager
 async def make_client(api_token: str) -> AsyncGenerator['Client', None]:
@@ -23,11 +24,15 @@ class NotFound(CodaError):
 class TooManyRequests(CodaError):
     pass
 
+class ContentTypeError(CodaError):
+    pass
+
 
 _MAX_PAGE_SIZE = 200
 _API_ENDPOINT = "https://coda.io/apis/v1"
 
 _request_limit = AdaptiveRateLimit(TooManyRequests, 10)
+_concurrency_limit = ConcurrencyLimit(50)
 
 
 class Client:
@@ -35,6 +40,7 @@ class Client:
         self._session = session
         self._authorization = {"Authorization": f"Bearer {api_token}"}
 
+    @_concurrency_limit
     @retry(5)
     @_request_limit
     async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
@@ -46,7 +52,7 @@ class Client:
                 content = await response.json()
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
-                raise Exception(f"Content type error for {content_text}", e)
+                raise ContentTypeError(f"Content type error for {content_text}", e)
 
             logging.info(f"GET {endpoint}: responded")
             return parse_dict_str_any(content)
@@ -70,6 +76,7 @@ class Client:
 
         logging.info(f"GET {endpoint}: responded")
     
+    @_concurrency_limit
     @retry(5)
     @_request_limit
     async def _get_page(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -79,9 +86,10 @@ class Client:
                 content = await response.json()
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
-                raise Exception(f"Content type error for {content_text}", e)
+                raise ContentTypeError(f"Content type error for {content_text}", e)
             return parse_dict_str_any(content)
 
+    @_concurrency_limit
     @retry(5)
     @_request_limit
     async def post(self, endpoint: str, data: Dict[str, Any]) -> None:
@@ -94,6 +102,7 @@ class Client:
             await _handle_potential_error(response)
             logging.info(f"POST {endpoint}: responded")
 
+    @_concurrency_limit
     @retry(5)
     @_request_limit
     async def put(self, endpoint: str, data: Dict[str, Any]) -> None:
@@ -102,6 +111,7 @@ class Client:
             await _handle_potential_error(response)
             logging.info(f"PUT {endpoint}: responded")
 
+    @_concurrency_limit
     @retry(5)
     @_request_limit
     async def delete(self, endpoint: str, data: Dict[str, Any] = {}) -> None:
@@ -113,7 +123,7 @@ class Client:
                 content = await response.json()
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
-                raise Exception(f"Content type error for {content_text}", e)
+                raise ContentTypeError(f"Content type error for {content_text}", e)
 
             logging.info(f"DELETE {endpoint}: responded")
 
