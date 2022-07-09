@@ -15,10 +15,15 @@ from codaio_exporter.utils.gather import gather_cancel_on_first_error, gather_ra
 class ProgressHandler:
     def __init__(self, num_tables: int, callback: Optional[ProgressCallback]):
         self._total = num_tables
+        self._progress_load_table = 0
         self._progress_compatibility_check = 0
         self._progress_cleared_table = 0
         self._progress_reimported = 0
         self._callback = callback
+        self._call()
+    
+    def increment_load_table(self) -> None:
+        self._progress_load_table += 1
         self._call()
     
     def increment_compatibility_check(self) -> None:
@@ -35,9 +40,10 @@ class ProgressHandler:
 
     def _call(self) -> None:
         if self._callback is not None:
-            self._callback("Compatibility check", self._progress_compatibility_check, self._total)
-            self._callback("Cleared table", self._progress_cleared_table, self._total)
-            self._callback("Finished reimport", self._progress_reimported, self._total)
+            self._callback("A: Load Table", self._progress_load_table, self._total)
+            self._callback("B: Compatibility check", self._progress_compatibility_check, self._total)
+            self._callback("C: Cleared table", self._progress_cleared_table, self._total)
+            self._callback("D: Finished reimport", self._progress_reimported, self._total)
 
 
 async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progress_callback: Optional[ProgressCallback] = None) -> None:
@@ -66,9 +72,9 @@ async def _check_table_is_compatible(doc: DocAPI, table: Table, progress_handler
         raise Exception(f"Table {table.id}: Export states table name is {table.name} but server thinks it is {table_api.name}. Aborting this reimport just to be safe.")
     if table_api.type() != TableType.table:
         raise Exception(f"Table {table.name} {table.id}: Server type is {table_api.type()} but expected it to be 'table'")
+    progress_handler.increment_load_table()
 
     await _check_columns_are_compatible(table_api, table, progress_handler)
-
     progress_handler.increment_compatibility_check()
 
 async def _check_columns_are_compatible(server_side_table: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
