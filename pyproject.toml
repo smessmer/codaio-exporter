@@ -10,6 +10,8 @@ ensure = "^1.0.2"
 aiohttp = "^3.8.1"
 dataclasses-json = "^0.5.7"
 rich = "^12.4.4"
+aiofiles = "^0.8.0"
+types-aiofiles = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

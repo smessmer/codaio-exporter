@@ -1,4 +1,12 @@
 [[package]]
+name = "aiofiles"
+version = "0.8.0"
+description = "File support for asyncio."
+category = "main"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[[package]]
 name = "aiohttp"
 version = "3.8.1"
 description = "Async http client/server framework (asyncio)"
@@ -308,6 +316,14 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "types-aiofiles"
+version = "0.8.9"
+description = "Typing stubs for aiofiles"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "4.3.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -350,9 +366,10 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "2563c7dbeafc31c2f3670d66083bce9521dfb3fb22a24dc0682e5d31ae64a5ea"
+content-hash = "265313c2f037eaeb819c6ffdfee7f0b8107cab823f006a8ab47d98a1f8f59c85"
 
 [metadata.files]
+aiofiles = []
 aiohttp = [
     {file = "aiohttp-3.8.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:1ed0b6477896559f17b9eaeb6d38e07f7f9ffe40b9f0f9627ae8b9926ae260a8"},
     {file = "aiohttp-3.8.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7dadf3c307b31e0e61689cbf9e06be7a867c563d5a63ce9dca578f956609abf8"},
@@ -654,6 +671,7 @@ tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
+types-aiofiles = []
 typing-extensions = [
     {file = "typing_extensions-4.3.0-py3-none-any.whl", hash = "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02"},
     {file = "typing_extensions-4.3.0.tar.gz", hash = "sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6"},

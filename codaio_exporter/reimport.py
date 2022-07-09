@@ -1,7 +1,8 @@
 import os
 from typing import Optional, List, Dict
-import logging
 from ensure import check  # type: ignore
+import aiofiles
+import asyncio
 
 from codaio_exporter.utils.generator import collect
 from codaio_exporter.api import make_api
@@ -47,11 +48,7 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
 
         print("Reading tables from export...")
         tables_path = os.path.join(source_path, "tables/table")
-        tables = []
-        for table_dir in os.listdir(tables_path):
-            with open(os.path.join(tables_path, table_dir, "table.json"), 'r') as file:
-                json = file.read()
-                tables.append(Table.from_json(json))
+        tables: List[Table] = await gather_cancel_on_first_error(*(_load_table(os.path.join(tables_path, table_dir, "table.json")) for table_dir in os.listdir(tables_path)))
         print("Reading tables from export...done")
 
         progress_handler = ProgressHandler(len(tables), progress_display)
@@ -60,6 +57,10 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
         await gather_cancel_on_first_error(*(_check_table_is_compatible(doc, table, progress_handler) for table in tables))
         await gather_cancel_on_first_error(*(_reimport_table(doc, table, progress_handler) for table in tables))
         print("Importing tables to coda.io...done")
+
+async def _load_table(path: str) -> Table:
+    json = await _read_file(path)
+    return Table.from_json(json)
 
 async def _check_table_is_compatible(doc: DocAPI, table: Table, progress_handler: ProgressHandler) -> None:
     table_api = await doc.get_table(table.id)
@@ -110,3 +111,12 @@ async def _insert_rows(table_api: TableAPI, table: Table) -> None:
         return result
     cells = [format_row(row) for row in table.rows]
     await table_api.insert_rows(cells)
+
+
+# Semaphore to make sure we don't get 'too many open files'
+read_semaphore = asyncio.Semaphore(512)
+
+async def _read_file(path: str) -> str:
+    async with read_semaphore:
+        async with aiofiles.open(path, 'r') as file:
+            return await file.read()
