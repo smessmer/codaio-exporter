@@ -1,6 +1,7 @@
 from typing import ParamSpec, TypeVar, Callable, Awaitable
 from functools import wraps
 import logging
+import asyncio
 
 
 P = ParamSpec('P')
@@ -22,5 +23,7 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
                         raise
                     else:
                         logging.warn(f"Encountered error. Retrying ({remaining_retries} remaining attempts)...")
+                        # Let's sleep a bit just in case the server is in a temporarily bad state
+                        await asyncio.sleep(1)
         return inner
     return decorator

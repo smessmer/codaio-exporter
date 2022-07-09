@@ -12,6 +12,7 @@ from codaio_exporter.api.row import RowAPI
 class Column(DataClassJsonMixin):
     id: str
     name: str
+    calculated: bool
     formula: Optional[str]
 
 @dataclass
@@ -21,6 +22,7 @@ class Row(DataClassJsonMixin):
 @dataclass
 class Table(DataClassJsonMixin):
     id: str
+    name: str
     columns: List[Column]
     rows: List[Row]
 
@@ -42,12 +44,13 @@ class Table(DataClassJsonMixin):
         return f"<html><head/><body>{table_html}</body></html>"
 
 
-def parse_table_from_api(table_id: str, columns: List[ColumnAPI], rows: List[RowAPI]) -> Table:
+def parse_table_from_api(table_id: str, table_name: str, columns: List[ColumnAPI], rows: List[RowAPI]) -> Table:
     rows.sort(key=lambda row: row.index())
     parsed_columns = [_parse_column(column) for column in columns]
     parsed_rows = [_parse_row(parsed_columns, row) for row in rows]
     return Table(
         id=table_id,
+        name=table_name,
         columns=parsed_columns,
         rows=parsed_rows,
     )
@@ -56,6 +59,7 @@ def _parse_column(column: ColumnAPI) -> Column:
     return Column(
         id=column.id(),
         name=column.name(),
+        calculated=column.calculated(),
         formula=column.formula(),
     )
 

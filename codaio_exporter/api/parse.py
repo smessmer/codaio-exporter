@@ -13,6 +13,12 @@ def parse_str(v: Any) -> str:
     assert isinstance(v, str)
     return v
 
+def parse_bool(v: Any) -> bool:
+    check(v).is_a(bool).or_raise(
+        lambda _: Exception(f"Tried to read {v} as bool"))
+    assert isinstance(v, bool)
+    return v
+
 def parse_dict_str_any(v: Any) -> Dict[str, Any]:
     check(v).is_a(Dict).or_raise(
         lambda _: Exception(f"Tried to read {v} as Dict"))

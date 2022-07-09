@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import logging
-import curses
+# import curses
 from typing import Dict, Optional, NoReturn
 
 from codaio_exporter.export import export_all_docs, export_doc
@@ -11,21 +11,22 @@ from codaio_exporter.reimport import reimport_doc
 class ProgressDisplay:
     def __init__(self) -> None:
         self._progress: Dict[str, str] = {}
-        self._screen = curses.initscr()
+        # self._screen = curses.initscr()
 
     def progress_callback(self, doc_name: str, progress: int, total: int) -> None:
         self._progress[doc_name] = f"{progress}/{total}"
         self._display()
     
     def _display(self) -> None:
-        line = 0
-        self._screen.addstr(0, 0, "Exporting tables from documents:")
-        self._screen.addstr(1, 0, "--------------------------------")
-        line += 3
-        for key, value in self._progress.items():
-            self._screen.addstr(line, 0, f"{key}: {value}")
-            line += 1
-        self._screen.refresh()
+        print("------------------------\nProgress: \n" + "\n".join([f"{key}: {value}" for key, value in self._progress.items()]) + "\n------------------------\n")
+        # line = 0
+        # self._screen.addstr(0, 0, "Exporting tables from documents:")
+        # self._screen.addstr(1, 0, "--------------------------------")
+        # line += 3
+        # for key, value in self._progress.items():
+        #     self._screen.addstr(line, 0, f"{key}: {value}")
+        #     line += 1
+        # self._screen.refresh()
     
 
 async def async_main() -> None:
@@ -64,6 +65,8 @@ async def main_export(args: argparse.Namespace) -> None:
     else:
         await export_doc(args.api_token, args.dest_dir, args.src_doc_id, progress_display.progress_callback)
 
+    print("Export successfully finished")
+
 async def main_reimport(args: argparse.Namespace) -> None:
     if args.src_dir is None:
         error_exit("Please specify the --src-dir argument")
@@ -74,6 +77,8 @@ async def main_reimport(args: argparse.Namespace) -> None:
     progress_display = ProgressDisplay()
     
     await reimport_doc(args.api_token, args.src_dir, args.dest_doc_id, progress_display.progress_callback)
+
+    print("Reimport successfully finished")
     
     
 def error_exit(msg: str) -> NoReturn:
@@ -84,4 +89,5 @@ def main() -> None:
     asyncio.run(async_main())
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    # curses.wrapper(main)
+    main()

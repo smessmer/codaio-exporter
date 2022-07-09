@@ -83,7 +83,7 @@ def _export_columns(table_path: str, columns: List[ColumnAPI]) -> None:
             file.write(str(column.raw_data()))
 
 def _export_rows(table_path: str, table_api: TableAPI, columns: List[ColumnAPI], rows: List[RowAPI]) -> None:
-    table = parse_table_from_api(table_api.id(), columns, rows)
+    table = parse_table_from_api(table_api.id(), table_api.name(), columns, rows)
     table_csv = table.to_csv()
     table_html = table.to_html()
     table_json = table.to_json()

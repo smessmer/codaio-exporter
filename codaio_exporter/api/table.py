@@ -1,4 +1,4 @@
-from typing import Dict, Any, AsyncGenerator
+from typing import Dict, Any, AsyncGenerator, List
 from enum import Enum
 from codaio_exporter.api.parse import parse_str
 from codaio_exporter.api.column import ColumnAPI
@@ -50,3 +50,15 @@ class TableAPI:
     async def get_all_rows(self) -> AsyncGenerator[RowAPI, None]:
         async for row in self._client.get_list(f"{self._api_root}/rows"):
             yield RowAPI(row)
+
+    async def delete_rows(self, row_ids: List[str]) -> None:
+        await self._client.delete(f"{self._api_root}/rows", data={"rowIds": row_ids})
+
+    # Each entry of rows is a Dict from column id to value
+    async def insert_rows(self, rows: List[Dict[str, str]]) -> None:
+        def format_cell(column: str, value: str) -> Dict[str, str]:
+            return {"column": column, "value": value}
+        def format_row(row: Dict[str, str]) -> List[Dict[str, str]]:
+            return [format_cell(column, value) for (column, value) in row.items()]
+        rows_data = [{"cells": format_row(row)} for row in rows]
+        await self._client.post(f"{self._api_root}/rows", data={"rows": rows_data})

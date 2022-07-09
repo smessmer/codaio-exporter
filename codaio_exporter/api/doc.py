@@ -28,3 +28,7 @@ class DocAPI:
     async def get_all_tables(self) -> AsyncGenerator[TableAPI, None]:
         async for table in self._client.get_list(f"{self._api_root}/tables"):
             yield TableAPI(self._client, self._api_root, table)
+
+    async def get_table(self, table_id: str) -> TableAPI:
+        table = await self._client.get_item(f"{self._api_root}/tables/{table_id}")
+        return TableAPI(self._client, self._api_root, table)

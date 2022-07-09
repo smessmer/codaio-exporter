@@ -35,10 +35,12 @@ class Client:
         self._session = session
         self._authorization = {"Authorization": f"Bearer {api_token}"}
 
-    async def get_item(self, endpoint: str, data: Dict[str, Any] = {}) -> Dict[str, Any]:
-        logging.info(f"GET {endpoint} {str(data)}")
+    @retry(5)
+    @_request_limit
+    async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
+        logging.info(f"GET {endpoint} {str(params)}")
 
-        async with self._session.get(_API_ENDPOINT + endpoint, params=data, headers=self._authorization) as response:
+        async with self._session.get(_API_ENDPOINT + endpoint, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
                 content = await response.json()
@@ -50,19 +52,19 @@ class Client:
             return parse_dict_str_any(content)
 
 
-    async def get_list(self, endpoint: str, data: Dict[str, Any] = {}) -> AsyncGenerator[Any, None]:
-        logging.info(f"GET {endpoint} {str(data)}")
+    async def get_list(self, endpoint: str, params: Dict[str, Any] = {}) -> AsyncGenerator[Any, None]:
+        logging.info(f"GET {endpoint} {str(params)}")
 
-        data["limit"] = _MAX_PAGE_SIZE
+        params["limit"] = _MAX_PAGE_SIZE
 
-        page = await self._get_page(_API_ENDPOINT + endpoint, data)
+        page = await self._get_page(_API_ENDPOINT + endpoint, params)
         for item in page.pop("items"):
             yield item
 
         while page.get("nextPageLink") is not None:
             nextPageLink = page.get("nextPageLink")
             assert nextPageLink is not None
-            page = await self._get_page(nextPageLink, data={})
+            page = await self._get_page(nextPageLink, params={})
             for item in page.pop("items"):
                 yield item
 
@@ -70,8 +72,8 @@ class Client:
     
     @retry(5)
     @_request_limit
-    async def _get_page(self, url: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        async with self._session.get(url, params=data, headers=self._authorization) as response:
+    async def _get_page(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._session.get(url, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
                 content = await response.json()
@@ -99,6 +101,21 @@ class Client:
         async with self._session.put(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
             await _handle_potential_error(response)
             logging.info(f"PUT {endpoint}: responded")
+
+    @retry(5)
+    @_request_limit
+    async def delete(self, endpoint: str, data: Dict[str, Any] = {}) -> None:
+        logging.info(f"DELETE {endpoint} {str(data)}")
+
+        async with self._session.delete(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
+            try:
+                await _handle_potential_error(response)
+                content = await response.json()
+            except aiohttp.client_exceptions.ContentTypeError as e:
+                content_text = await response.text()
+                raise Exception(f"Content type error for {content_text}", e)
+
+            logging.info(f"DELETE {endpoint}: responded")
 
 
 async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
