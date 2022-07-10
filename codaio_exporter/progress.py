@@ -1,14 +1,15 @@
-from typing import Generator, Optional
+from typing import Generator, Optional, final, Final
 from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, SpinnerColumn, TimeRemainingColumn, TaskProgressColumn
 from contextlib import contextmanager
 
 
+@final
 class ProgressBar:
     def __init__(self, progress: Progress, name: str, total: Optional[int] = None):
         self._current = 0
         self._total = total
-        self._progress = progress
-        self._task_id = self._progress.add_task(name, total=total)
+        self._progress: Final = progress
+        self._task_id: Final = self._progress.add_task(name, total=total)
         self._update()
     
     def set_total(self, total: int) -> None:

@@ -1,4 +1,4 @@
-from typing import Dict, Any, AsyncGenerator, List, Optional, Callable
+from typing import Dict, Any, AsyncGenerator, List, Optional, Callable, final, Final
 from enum import Enum
 from codaio_exporter.api.parse import parse_str
 from codaio_exporter.api.column import ColumnAPI
@@ -6,6 +6,7 @@ from codaio_exporter.api.row import RowAPI
 from codaio_exporter.api.client import Client
 
 
+@final
 class TableType(Enum):
     view = "view"
     table = "table"
@@ -19,11 +20,12 @@ class TableType(Enum):
             raise Exception(f"Unknown table type {self}")
 
 
+@final
 class TableAPI:
     def __init__(self, client: Client, doc_api_root: str, data: Dict[str, Any]):
-        self._data = data
-        self._client = client
-        self._api_root = f"{doc_api_root}/tables/{self.id()}"
+        self._data: Final = data
+        self._client: Final = client
+        self._api_root: Final = f"{doc_api_root}/tables/{self.id()}"
 
     def raw_data(self) -> Dict[str, Any]:
         return self._data

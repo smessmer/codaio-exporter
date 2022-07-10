@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
-from typing import List, Optional
+from typing import List, Optional, final
 from io import StringIO
 import html, csv
 
@@ -8,6 +8,7 @@ from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
 
 
+@final
 @dataclass
 class Column(DataClassJsonMixin):
     id: str
@@ -15,10 +16,12 @@ class Column(DataClassJsonMixin):
     calculated: bool
     formula: Optional[str]
 
+@final
 @dataclass
 class Row(DataClassJsonMixin):
     cells: List[str]
 
+@final
 @dataclass
 class Table(DataClassJsonMixin):
     id: str

@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Dict
+from typing import Optional, Dict, final, Final
 from ensure import check  # type: ignore
 import aiofiles
 import asyncio
@@ -13,6 +13,7 @@ from codaio_exporter.table import Table, Row
 from codaio_exporter.utils.gather import gather_cancel_on_first_error, gather_raise_first_error_after_all_tasks_complete
 
 
+@final
 class ProgressHandler:
     def __init__(self, num_tables: int, progress_display: Optional[ProgressDisplay]):
         self._progress_load_export = None

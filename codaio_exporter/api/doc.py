@@ -1,14 +1,15 @@
-from typing import Dict, Any, AsyncGenerator
+from typing import Dict, Any, AsyncGenerator, final, Final
 from codaio_exporter.api.client import Client
 from codaio_exporter.api.parse import parse_str
 from codaio_exporter.api.table import TableAPI
 
 
+@final
 class DocAPI:
     def __init__(self, client: Client, data: Dict[str, Any]):
-        self._client = client
-        self._data = data
-        self._api_root = f"/docs/{self.id()}"
+        self._client: Final = client
+        self._data: Final = data
+        self._api_root: Final = f"/docs/{self.id()}"
 
     def raw_data(self) -> Dict[str, Any]:
         return self._data

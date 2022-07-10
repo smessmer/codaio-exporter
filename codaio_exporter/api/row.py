@@ -1,9 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, final, Final
 from codaio_exporter.api.parse import parse_str, parse_int
 
+
+@final
 class RowAPI:
     def __init__(self, data: Dict[str, Any]):
-        self._data = data
+        self._data: Final = data
 
     def id(self) -> str:
         return parse_str(self._data["id"])

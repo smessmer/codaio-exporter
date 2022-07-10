@@ -1,11 +1,12 @@
 import time, asyncio
-from typing import Callable, Any, Awaitable, Type, TypeVar, ParamSpec
+from typing import Callable, Any, Awaitable, Type, TypeVar, ParamSpec, final, Final
 from functools import wraps
 from math import ceil
 import logging
 from enum import Enum
 
 
+@final
 class _State(Enum):
     ## Everything is normal, all requests go through
     normal = "normal"
@@ -26,12 +27,13 @@ R = TypeVar('R')
 
 ## Allows concurrent calls to an async function, but if a predefined exception happens (e.g. TOO_MANY_REQUESTS),
 ## all calls will be blocked for a defined backoff interval.
+@final
 class AdaptiveRateLimit:
     def __init__(self, backoff_exception: Type[BaseException], backoff_interval_sec: int):
         self._state = _State.normal
         self._backoff_until = 0
-        self._backoff_interval_sec = backoff_interval_sec
-        self._backoff_exception = backoff_exception
+        self._backoff_interval_sec: Final = backoff_interval_sec
+        self._backoff_exception: Final = backoff_exception
         self._request_counter = 0
 
     def __call__(self, func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:

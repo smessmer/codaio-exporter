@@ -1,4 +1,4 @@
-from typing import Dict, Any, AsyncGenerator, NewType, Optional, Callable
+from typing import final, Final, Dict, Any, AsyncGenerator, NewType, Optional, Callable
 import aiohttp
 import logging
 import asyncio
@@ -43,10 +43,11 @@ _concurrency_limit = ConcurrencyLimit(50)
 RequestId = NewType('RequestId', str)
 
 
+@final
 class Client:
     def __init__(self, session: aiohttp.ClientSession, api_token: str):
-        self._session = session
-        self._authorization = {"Authorization": f"Bearer {api_token}"}
+        self._session: Final = session
+        self._authorization: Final = {"Authorization": f"Bearer {api_token}"}
 
     @_concurrency_limit
     async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:

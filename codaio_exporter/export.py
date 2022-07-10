@@ -1,6 +1,6 @@
 import os
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, final
 import aiofiles
 
 from codaio_exporter.utils.gather import gather_raise_first_error_after_all_tasks_complete
@@ -14,6 +14,7 @@ from codaio_exporter.table import Table, parse_table_from_api
 from codaio_exporter.progress import ProgressDisplay, ProgressBar
 
 
+@final
 class ProgressHandler:
     def __init__(self, name: str, progress_display: Optional[ProgressDisplay]):
         self._bar = None
