@@ -15,20 +15,28 @@ from codaio_exporter.utils.gather import gather_cancel_on_first_error, gather_ra
 
 class ProgressHandler:
     def __init__(self, num_tables: int, progress_display: Optional[ProgressDisplay]):
+        self._progress_load_export = None
         self._progress_load_table = None
         self._progress_compatibility_check = None
-        self._progress_clear_issued = None
-        self._progress_clear_complete = None
+        self._progress_list_rows = None
+        self._progress_delete_rows_issued = None
+        self._progress_delete_rows_complete = None
         self._progress_reimport_issued = None
         self._progress_reimport_complete = None
         if progress_display is not None:
-            self._progress_load_table = progress_display.add_task("Loading Tables", total=num_tables)
-            self._progress_compatibility_check = progress_display.add_task("Checking Schemas", total=num_tables)
-            self._progress_clear_issued = progress_display.add_task("Clearing Tables (issued)", total=num_tables)
-            self._progress_clear_complete = progress_display.add_task("Clearing Tables (completed)", total=num_tables)
-            self._progress_reimport_issued = progress_display.add_task("Reimporting Tables (issued)", total=num_tables)
-            self._progress_reimport_complete = progress_display.add_task("Reimporting Tables (completed)", total=num_tables)
-    
+            self._progress_load_export = progress_display.add_task("Loading Tables from Export", total=num_tables)
+            self._progress_load_table = progress_display.add_task("Loading Tables from coda.io", total=num_tables)
+            self._progress_compatibility_check = progress_display.add_task("Comparing Schemas", total=num_tables)
+            self._progress_list_rows = progress_display.add_task("Listing Rows from coda.io", total=num_tables)
+            self._progress_delete_rows_issued = progress_display.add_task("Deleting Rows from coda.io (issued)", total=num_tables)
+            self._progress_delete_rows_complete = progress_display.add_task("Deleting Rows from coda.io (completed)", total=num_tables)
+            self._progress_reimport_issued = progress_display.add_task("Reimporting Rows from Export to coda.io (issued)", total=num_tables)
+            self._progress_reimport_complete = progress_display.add_task("Reimporting Rows from Export to coda.io (completed)", total=num_tables)
+
+    def increment_load_export(self) -> None:
+        if self._progress_load_export is not None:
+            self._progress_load_export.increment_progress()
+
     def increment_load_table(self) -> None:
         if self._progress_load_table is not None:
             self._progress_load_table.increment_progress()
@@ -36,14 +44,18 @@ class ProgressHandler:
     def increment_compatibility_check(self) -> None:
         if self._progress_compatibility_check is not None:
             self._progress_compatibility_check.increment_progress()
-    
-    def increment_clear_issued(self) -> None:
-        if self._progress_clear_issued is not None:
-            self._progress_clear_issued.increment_progress()
 
-    def increment_clear_complete(self) -> None:
-        if self._progress_clear_complete is not None:
-            self._progress_clear_complete.increment_progress()
+    def increment_list_rows(self) -> None:
+        if self._progress_list_rows is not None:
+            self._progress_list_rows.increment_progress()
+
+    def increment_delete_rows_issued(self) -> None:
+        if self._progress_delete_rows_issued is not None:
+            self._progress_delete_rows_issued.increment_progress()
+
+    def increment_delete_rows_complete(self) -> None:
+        if self._progress_delete_rows_complete is not None:
+            self._progress_delete_rows_complete.increment_progress()
     
     def increment_reimport_issued(self) -> None:
         if self._progress_reimport_issued is not None:
@@ -60,32 +72,39 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
 
         print("Reading tables from export...")
         tables_path = os.path.join(source_path, "tables/table")
-        tables: List[Table] = await gather_cancel_on_first_error(*(_load_table(os.path.join(tables_path, table_dir, "table.json")) for table_dir in os.listdir(tables_path)))
+        table_dirs = os.listdir(tables_path)
+        progress_handler = ProgressHandler(len(table_dirs), progress_display)
+
+        tables = await gather_cancel_on_first_error(*(_load_table(os.path.join(tables_path, table_dir, "table.json"), progress_handler) for table_dir in table_dirs))
         print("Reading tables from export...done")
 
-        progress_handler = ProgressHandler(len(tables), progress_display)
-
         print("Importing tables to coda.io...")
-        await gather_cancel_on_first_error(*(_check_table_is_compatible(doc, table, progress_handler) for table in tables))
-        await gather_cancel_on_first_error(*(_reimport_table(doc, table, progress_handler) for table in tables))
+        loaded_tables = await gather_cancel_on_first_error(*(_load_table_api_and_check_schema(doc, table, progress_handler) for table in tables))
+        await gather_cancel_on_first_error(*(_reimport_table(table_api, table, progress_handler) for table, table_api in zip(tables, loaded_tables)))
         print("Importing tables to coda.io...done")
 
-async def _load_table(path: str) -> Table:
+async def _load_table(path: str, progress_handler: ProgressHandler) -> Table:
     json = await _read_file(path)
-    return Table.from_json(json)
+    result = Table.from_json(json)
+    progress_handler.increment_load_export()
+    return result
 
-async def _check_table_is_compatible(doc: DocAPI, table: Table, progress_handler: ProgressHandler) -> None:
+async def _load_table_api_and_check_schema(doc: DocAPI, table: Table, progress_handler: ProgressHandler) -> TableAPI:
     table_api = await doc.get_table(table.id)
+    progress_handler.increment_load_table()
+    await _check_table_is_compatible(table_api, table)
+    progress_handler.increment_compatibility_check()
+    return table_api
+
+async def _check_table_is_compatible(table_api: TableAPI, table: Table) -> None:
     if table_api.name() != table.name:
         raise Exception(f"Table {table.id}: Export states table name is {table.name} but server thinks it is {table_api.name}. Aborting this reimport just to be safe.")
     if table_api.type() != TableType.table:
         raise Exception(f"Table {table.name} {table.id}: Server type is {table_api.type()} but expected it to be 'table'")
-    progress_handler.increment_load_table()
 
-    await _check_columns_are_compatible(table_api, table, progress_handler)
-    progress_handler.increment_compatibility_check()
+    await _check_columns_are_compatible(table_api, table)
 
-async def _check_columns_are_compatible(server_side_table: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
+async def _check_columns_are_compatible(server_side_table: TableAPI, table: Table) -> None:
     columns_api = await collect(server_side_table.get_all_columns())
     columns_api_by_id = {column.id(): column for column in columns_api}
     for column in table.columns:
@@ -100,17 +119,16 @@ async def _check_columns_are_compatible(server_side_table: TableAPI, table: Tabl
             raise Exception(f"Table {table.name} {table.id}: Column {column.name} {column.id}: Export states column is a calculated column but server states it is a manual column")
 
 
-async def _reimport_table(doc: DocAPI, table: Table, progress_handler: ProgressHandler) -> None:
-    # TODO We run doc.get_table here again after we already ran it in _check_columns_are_compatible. This can be optimized
-    table_api = await doc.get_table(table.id)
+async def _reimport_table(table_api: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
     await _delete_all_rows(table_api, progress_handler)
     await _insert_rows(table_api, table, progress_handler)
 
 async def _delete_all_rows(table_api: TableAPI, progress_handler: ProgressHandler) -> None:
     rows = await collect(table_api.get_all_rows())
     row_ids = [row.id() for row in rows]
-    await table_api.delete_rows(row_ids, on_issued=progress_handler.increment_clear_issued)
-    progress_handler.increment_clear_complete()
+    progress_handler.increment_list_rows()
+    await table_api.delete_rows(row_ids, on_issued=progress_handler.increment_delete_rows_issued)
+    progress_handler.increment_delete_rows_complete()
     
 async def _insert_rows(table_api: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
     def format_row(row: Row) -> Dict[str, str]:
