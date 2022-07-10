@@ -78,22 +78,22 @@ class AdaptiveRateLimit:
                 
                 try:
                     if is_backoff:
-                        logging.warning(f"Request {request_index}: Attempting another request")
-                    logging.warning(f"Request {request_index}: Running request")
+                        logging.debug(f"Request {request_index}: Attempting another request after backoff")
+                    logging.debug(f"Request {request_index}: Running request")
                     result = await func(*args, **kwds)
                     if is_backoff:
                         # Only change state to _State.normal if we're actually the one request running in _State.recover mode.
                         # Otherwise, race conditions could cause some requests to set _State.backoff and another request to immediately
                         # reset it without any actual backoff period.
                         self._state = _State.normal
-                        logging.warning(f"Request {request_index}: Attempting another request...succeeded. Backoff ended.")
+                        logging.debug(f"Request {request_index}: Attempting another request after backoff...succeeded. Backoff ended.")
                     return result
                 except self._backoff_exception:
                     if is_backoff:
-                        logging.warning(f"Request {request_index}: Attempting another request...still hitting rate limit. Backing off again.")
+                        logging.debug(f"Request {request_index}: Attempting another request after backoff...still hitting rate limit. Backing off again.")
                         self._state = _State.backoff
                     elif self._state == _State.normal:
-                        logging.warning(f"Request {request_index}: Rate limit exception detected. Backing off.")
+                        logging.debug(f"Request {request_index}: Rate limit exception detected. Backing off.")
                         self._state = _State.backoff
                     elif self._state == _State.recover:
                         # Another task (not ourselves) is currently trying to recover. Ignore this failure.
@@ -102,14 +102,12 @@ class AdaptiveRateLimit:
                         # Another concurrent task already put us into backoff while we were running.
                         # Don't do anything special, just increase self._backoff_until accordingly
                         assert self._state == _State.backoff
-                        # TODO Remove this
-                        logging.warning(f"Request {request_index}: Co-ratelimit exception")
                     self._backoff_until = ceil(time.monotonic() + self._backoff_interval_sec)
                 except:
                     # An unrelated error happened
                     if is_backoff:
                         # But we're the task responsible for recovering from _State.recovery
-                        logging.warning(f"Request {request_index}: Attempting another request...failed with error unrelated to rate limit. Waking a different request.")
+                        logging.debug(f"Request {request_index}: Attempting another request after backoff...failed with error unrelated to rate limit. Waking a different request.")
                         # Sleep for a bit in case the server has temporary issues
                         await asyncio.sleep(1)
                         # Setting the state back to _State.backoff but without a timeout.
