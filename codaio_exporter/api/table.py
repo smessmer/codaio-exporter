@@ -1,4 +1,4 @@
-from typing import Dict, Any, AsyncGenerator, List
+from typing import Dict, Any, AsyncGenerator, List, Optional, Callable
 from enum import Enum
 from codaio_exporter.api.parse import parse_str
 from codaio_exporter.api.column import ColumnAPI
@@ -51,14 +51,14 @@ class TableAPI:
         async for row in self._client.get_list(f"{self._api_root}/rows"):
             yield RowAPI(row)
 
-    async def delete_rows(self, row_ids: List[str]) -> None:
-        await self._client.delete(f"{self._api_root}/rows", data={"rowIds": row_ids})
+    async def delete_rows(self, row_ids: List[str], on_issued: Optional[Callable[[], None]] = None) -> None:
+        await self._client.delete(f"{self._api_root}/rows", data={"rowIds": row_ids}, on_issued=on_issued)
 
     # Each entry of rows is a Dict from column id to value
-    async def insert_rows(self, rows: List[Dict[str, str]]) -> None:
+    async def insert_rows(self, rows: List[Dict[str, str]], on_issued: Optional[Callable[[], None]] = None) -> None:
         def format_cell(column: str, value: str) -> Dict[str, str]:
             return {"column": column, "value": value}
         def format_row(row: Dict[str, str]) -> List[Dict[str, str]]:
             return [format_cell(column, value) for (column, value) in row.items()]
         rows_data = [{"cells": format_row(row)} for row in rows]
-        await self._client.post(f"{self._api_root}/rows", data={"rows": rows_data})
+        await self._client.post(f"{self._api_root}/rows", data={"rows": rows_data}, on_issued=on_issued)

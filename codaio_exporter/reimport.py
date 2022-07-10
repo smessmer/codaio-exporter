@@ -17,13 +17,17 @@ class ProgressHandler:
     def __init__(self, num_tables: int, progress_display: Optional[ProgressDisplay]):
         self._progress_load_table = None
         self._progress_compatibility_check = None
-        self._progress_cleared_table = None
-        self._progress_reimported = None
+        self._progress_clear_issued = None
+        self._progress_clear_complete = None
+        self._progress_reimport_issued = None
+        self._progress_reimport_complete = None
         if progress_display is not None:
-            self._progress_load_table = progress_display.add_task("Load Table", total=num_tables)
-            self._progress_compatibility_check = progress_display.add_task("Compatibility Check", total=num_tables)
-            self._progress_cleared_table = progress_display.add_task("Cleared Table", total=num_tables)
-            self._progress_reimported = progress_display.add_task("Reimported", total=num_tables)
+            self._progress_load_table = progress_display.add_task("Loading Tables", total=num_tables)
+            self._progress_compatibility_check = progress_display.add_task("Checking Schemas", total=num_tables)
+            self._progress_clear_issued = progress_display.add_task("Clearing Tables (issued)", total=num_tables)
+            self._progress_clear_complete = progress_display.add_task("Clearing Tables (completed)", total=num_tables)
+            self._progress_reimport_issued = progress_display.add_task("Reimporting Tables (issued)", total=num_tables)
+            self._progress_reimport_complete = progress_display.add_task("Reimporting Tables (completed)", total=num_tables)
     
     def increment_load_table(self) -> None:
         if self._progress_load_table is not None:
@@ -33,13 +37,21 @@ class ProgressHandler:
         if self._progress_compatibility_check is not None:
             self._progress_compatibility_check.increment_progress()
     
-    def increment_cleared_table(self) -> None:
-        if self._progress_cleared_table is not None:
-            self._progress_cleared_table.increment_progress()
+    def increment_clear_issued(self) -> None:
+        if self._progress_clear_issued is not None:
+            self._progress_clear_issued.increment_progress()
+
+    def increment_clear_complete(self) -> None:
+        if self._progress_clear_complete is not None:
+            self._progress_clear_complete.increment_progress()
     
-    def increment_reimported(self) -> None:
-        if self._progress_reimported is not None:
-            self._progress_reimported.increment_progress()
+    def increment_reimport_issued(self) -> None:
+        if self._progress_reimport_issued is not None:
+            self._progress_reimport_issued.increment_progress()
+
+    def increment_reimport_complete(self) -> None:
+        if self._progress_reimport_complete is not None:
+            self._progress_reimport_complete.increment_progress()
 
 
 async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progress_display: Optional[ProgressDisplay] = None) -> None:
@@ -91,17 +103,16 @@ async def _check_columns_are_compatible(server_side_table: TableAPI, table: Tabl
 async def _reimport_table(doc: DocAPI, table: Table, progress_handler: ProgressHandler) -> None:
     # TODO We run doc.get_table here again after we already ran it in _check_columns_are_compatible. This can be optimized
     table_api = await doc.get_table(table.id)
-    await _delete_all_rows(table_api)
-    progress_handler.increment_cleared_table()
-    await _insert_rows(table_api, table)
-    progress_handler.increment_reimported()
+    await _delete_all_rows(table_api, progress_handler)
+    await _insert_rows(table_api, table, progress_handler)
 
-async def _delete_all_rows(table_api: TableAPI) -> None:
+async def _delete_all_rows(table_api: TableAPI, progress_handler: ProgressHandler) -> None:
     rows = await collect(table_api.get_all_rows())
     row_ids = [row.id() for row in rows]
-    await table_api.delete_rows(row_ids)
+    await table_api.delete_rows(row_ids, on_issued=progress_handler.increment_clear_issued)
+    progress_handler.increment_clear_complete()
     
-async def _insert_rows(table_api: TableAPI, table: Table) -> None:
+async def _insert_rows(table_api: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
     def format_row(row: Row) -> Dict[str, str]:
         check(len(table.columns)).equals(len(row.cells)).or_raise(lambda _: Exception(f"Table {table.name} {table.id}: Export has {len(table.columns)} columns but a row in the export has {len(row.cells)} columns"))
         result = {}
@@ -110,7 +121,8 @@ async def _insert_rows(table_api: TableAPI, table: Table) -> None:
                 result[table.columns[i].id] = row.cells[i]
         return result
     cells = [format_row(row) for row in table.rows]
-    await table_api.insert_rows(cells)
+    await table_api.insert_rows(cells, on_issued=progress_handler.increment_reimport_issued)
+    progress_handler.increment_reimport_complete()
 
 
 # Semaphore to make sure we don't get 'too many open files'

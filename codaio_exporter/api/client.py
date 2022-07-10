@@ -1,10 +1,10 @@
-from typing import List, Dict, Any, Optional, AsyncGenerator
+from typing import Dict, Any, AsyncGenerator, NewType, Optional, Callable
 import aiohttp
 import logging
 import asyncio
 from contextlib import asynccontextmanager
 
-from codaio_exporter.api.parse import parse_dict_str_any
+from codaio_exporter.api.parse import parse_dict_str_any, parse_str, parse_bool
 from codaio_exporter.utils.ratelimit import AdaptiveRateLimit
 from codaio_exporter.utils.retry import retry
 from codaio_exporter.utils.concurrencylimit import ConcurrencyLimit
@@ -27,12 +27,20 @@ class TooManyRequests(CodaError):
 class ContentTypeError(CodaError):
     pass
 
+class StatusCodeError(CodaError):
+    pass
+
+class ResponseFormatError(CodaError):
+    pass
+
 
 _MAX_PAGE_SIZE = 200
 _API_ENDPOINT = "https://coda.io/apis/v1"
 
 _request_limit = AdaptiveRateLimit(TooManyRequests, 10)
 _concurrency_limit = ConcurrencyLimit(50)
+
+RequestId = NewType('RequestId', str)
 
 
 class Client:
@@ -41,11 +49,15 @@ class Client:
         self._authorization = {"Authorization": f"Bearer {api_token}"}
 
     @_concurrency_limit
-    @retry(5)
-    @_request_limit
     async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
         logging.info(f"GET {endpoint} {str(params)}")
+        response = await self._get_item(endpoint, params=params)
+        logging.info(f"GET {endpoint}: responded")
+        return response
 
+    @retry(5)
+    @_request_limit
+    async def _get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
         async with self._session.get(_API_ENDPOINT + endpoint, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
@@ -54,7 +66,6 @@ class Client:
                 content_text = await response.text()
                 raise ContentTypeError(f"Content type error for {content_text}", e)
 
-            logging.info(f"GET {endpoint}: responded")
             return parse_dict_str_any(content)
 
 
@@ -92,41 +103,47 @@ class Client:
     @_concurrency_limit
     @retry(5)
     @_request_limit
-    async def post(self, endpoint: str, data: Dict[str, Any]) -> None:
+    async def post(self, endpoint: str, data: Dict[str, Any], on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
         logging.info(f"POST {endpoint}")
         async with self._session.post(
             _API_ENDPOINT + endpoint,
             json=data,
             headers={**self._authorization, "Content-Type": "application/json"},
         ) as response:
-            await _handle_potential_error(response)
+            request_id = await _handle_mutation_response(response)
             logging.info(f"POST {endpoint}: responded")
+            if on_issued is not None:
+                on_issued()
+            if wait_for_completion:
+                await self._wait_until_mutation_is_completed(request_id)
+                logging.info(f"POST {endpoint}: completed")
+            return request_id
 
     @_concurrency_limit
     @retry(5)
     @_request_limit
-    async def put(self, endpoint: str, data: Dict[str, Any]) -> None:
-        logging.info(f"PUT {endpoint}")
-        async with self._session.put(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
-            await _handle_potential_error(response)
-            logging.info(f"PUT {endpoint}: responded")
-
-    @_concurrency_limit
-    @retry(5)
-    @_request_limit
-    async def delete(self, endpoint: str, data: Dict[str, Any] = {}) -> None:
+    async def delete(self, endpoint: str, data: Dict[str, Any] = {}, on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
         logging.info(f"DELETE {endpoint} {str(data)}")
 
         async with self._session.delete(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
-            try:
-                await _handle_potential_error(response)
-                content = await response.json()
-            except aiohttp.client_exceptions.ContentTypeError as e:
-                content_text = await response.text()
-                raise ContentTypeError(f"Content type error for {content_text}", e)
-
+            request_id = await _handle_mutation_response(response)
             logging.info(f"DELETE {endpoint}: responded")
+            if on_issued is not None:
+                on_issued()
+            if wait_for_completion:
+                await self._wait_until_mutation_is_completed(request_id)
+                logging.info(f"DELETE {endpoint}: completed")
+            return request_id
 
+    async def _get_mutation_is_completed(self, request_id: RequestId) -> bool:
+        response = await self._get_item(f"/mutationStatus/{request_id}")
+        if "completed" not in response:
+            raise ResponseFormatError(f"Expected 'completed' to be in response but response was {response}")
+        return parse_bool(response["completed"])
+    
+    async def _wait_until_mutation_is_completed(self, request_id: RequestId) -> None:
+        while not await self._get_mutation_is_completed(request_id):
+            await asyncio.sleep(1)
 
 async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
     if response.ok:
@@ -144,3 +161,16 @@ async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
     raise CodaError(
         f'Status code: {response.status}. Message: {content["message"]}'
     )
+
+async def _handle_mutation_response(response: aiohttp.ClientResponse) -> RequestId:
+    try:
+        await _handle_potential_error(response)
+        if response.status != 202:
+            raise StatusCodeError(f"Expected status code 202 but found {response.status}")
+        content = await response.json()
+        if "requestId" not in content:
+            raise ResponseFormatError(f"Expected 'requestId' in response but response was {content}")
+        return RequestId(parse_str(content["requestId"]))
+    except aiohttp.client_exceptions.ContentTypeError as e:
+        content_text = await response.text()
+        raise ContentTypeError(f"Content type error for {content_text}", e)
