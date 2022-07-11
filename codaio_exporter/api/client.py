@@ -51,18 +51,18 @@ class Client:
 
     @_concurrency_limit
     async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
-        logging.info(f"GET {endpoint} {str(params)}")
         response = await self._get_item(endpoint, params=params)
-        logging.info(f"GET {endpoint}: responded")
         return response
 
     @retry(5)
     @_request_limit
     async def _get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
+        logging.info(f"GET {endpoint} {str(params)}")
         async with self._session.get(_API_ENDPOINT + endpoint, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
                 content = await response.json()
+                logging.info(f"GET {endpoint}: responded")
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
                 raise ContentTypeError(f"Content type error for {content_text}", e)
