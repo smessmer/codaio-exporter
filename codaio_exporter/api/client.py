@@ -54,7 +54,7 @@ class Client:
         response = await self._get_item(endpoint, params=params)
         return response
 
-    @retry(5)
+    @retry(10)
     @_request_limit
     async def _get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
         logging.info(f"GET {endpoint} {str(params)}")
@@ -89,7 +89,7 @@ class Client:
         logging.info(f"GET {endpoint}: responded")
     
     @_concurrency_limit
-    @retry(5)
+    @retry(10)
     @_request_limit
     async def _get_page(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
         async with self._session.get(url, params=params, headers=self._authorization) as response:
@@ -102,7 +102,7 @@ class Client:
             return parse_dict_str_any(content)
 
     @_concurrency_limit
-    @retry(5)
+    @retry(10)
     @_request_limit
     async def post(self, endpoint: str, data: Dict[str, Any], on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
         logging.info(f"POST {endpoint}")
@@ -121,7 +121,7 @@ class Client:
             return request_id
 
     @_concurrency_limit
-    @retry(5)
+    @retry(10)
     @_request_limit
     async def delete(self, endpoint: str, data: Dict[str, Any] = {}, on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
         logging.info(f"DELETE {endpoint} {str(data)}")

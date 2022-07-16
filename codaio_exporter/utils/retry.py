@@ -26,6 +26,6 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
                         logging.warn(f"Encountered error {sys.exc_info()[0]}. Retrying ({remaining_retries} remaining attempts)...")
                         logging.debug(f"Error was {sys.exc_info()[1]}")
                         # Let's sleep a bit just in case the server is in a temporarily bad state
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(5)
         return inner
     return decorator
