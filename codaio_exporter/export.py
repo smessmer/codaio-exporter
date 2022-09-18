@@ -116,7 +116,11 @@ def _column_name_for_path(index: int, column: ColumnAPI, num_columns: int) -> st
     return _remove_path_unsafe_characters(f"{_format_index(index, num_columns)} - {column.id()} - {column.name()}")
 
 def _row_name_for_path(row: Row, num_rows: int) -> str:
-    return _remove_path_unsafe_characters(f"{_format_index(row.index, num_rows)} - {row.id} - {row.name}.json")
+    if len(row.name) > 100:
+        row_name = "ROWNAME_TOO_LONG"
+    else:
+        row_name = row.name
+    return _remove_path_unsafe_characters(f"{_format_index(row.index, num_rows)} - {row.id} - {row_name}.json")
 
 def _remove_path_unsafe_characters(name: str) -> str:
     return name.replace('/', '_')
