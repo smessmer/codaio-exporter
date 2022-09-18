@@ -10,7 +10,7 @@ from codaio_exporter.api.doc import DocAPI
 from codaio_exporter.api.table import TableAPI
 from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
-from codaio_exporter.table import Table, parse_table_from_api
+from codaio_exporter.table import Table, Row, parse_table_from_api
 from codaio_exporter.progress import ProgressDisplay, ProgressBar
 
 
@@ -87,9 +87,17 @@ async def _export_rows(table_path: str, table_api: TableAPI, columns: List[Colum
     table_html = table.to_html()
     table_json = table.to_json()
     await gather_raise_first_error_after_all_tasks_complete(*(
+        _write_raw_json_row_files(table.rows, os.path.join(table_path, "rows")),
         _write_file(os.path.join(table_path, "table.csv"), table_csv),
         _write_file(os.path.join(table_path, "table.html"), table_html),
         _write_file(os.path.join(table_path, "table.json"), table_json),
+    ))
+
+async def _write_raw_json_row_files(rows: List[Row], folder: str) -> None:
+    os.makedirs(folder, exist_ok=False)
+    await gather_raise_first_error_after_all_tasks_complete(*(
+        _write_file(os.path.join(folder, f"{row.index} - {row.id} - {_remove_path_unsafe_characters(row.name)}.json"), str(row.raw_data))
+        for row in rows
     ))
 
 def _doc_path(root_path: str, doc: DocAPI) -> str:

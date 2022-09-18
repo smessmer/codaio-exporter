@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
-from typing import List, Optional, final
+from typing import List, Optional, final, Any, Dict
 from io import StringIO
 import html, csv
 
@@ -19,7 +19,11 @@ class Column(DataClassJsonMixin):
 @final
 @dataclass
 class Row(DataClassJsonMixin):
+    index: int
+    id: str
+    name: str
     cells: List[str]
+    raw_data: Dict[str, Any]
 
 @final
 @dataclass
@@ -71,7 +75,11 @@ def _parse_row(columns: List[Column], row: RowAPI) -> Row:
         raise Exception(f"_Row {row.id()} has wrong number of cells. Expected {len(columns)} columns but found {row.num_cells()}")
     cells = [row.get_cell_value(column.id) for column in columns]
     return Row(
+        id=row.id(),
+        index=row.index(),
+        name=row.name(),
         cells=cells,
+        raw_data=row.raw_data(),
     )
 
 def _make_html_column_header(column: Column) -> str:
