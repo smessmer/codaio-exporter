@@ -76,9 +76,10 @@ async def _export_table(doc_path: str, table: TableAPI, progress_handler: Progre
 async def _export_columns(table_path: str, columns: List[ColumnAPI]) -> None:
     columns_path = os.path.join(table_path, "columns")
     os.makedirs(columns_path, exist_ok=False)
+    num_columns = len(columns)
     await gather_raise_first_error_after_all_tasks_complete(*(
-        _write_file(os.path.join(columns_path, _column_name_for_path(column) + ".json"), str(column.raw_data()))
-        for column in columns
+        _write_file(os.path.join(columns_path, _column_name_for_path(index, column, num_columns) + ".json"), str(column.raw_data()))
+        for (index, column) in enumerate(columns)
     ))
 
 async def _export_rows(table_path: str, table_api: TableAPI, columns: List[ColumnAPI], rows: List[RowAPI]) -> None:
@@ -95,8 +96,9 @@ async def _export_rows(table_path: str, table_api: TableAPI, columns: List[Colum
 
 async def _write_raw_json_row_files(rows: List[Row], folder: str) -> None:
     os.makedirs(folder, exist_ok=False)
+    num_rows = len(rows)
     await gather_raise_first_error_after_all_tasks_complete(*(
-        _write_file(os.path.join(folder, f"{row.index} - {row.id} - {_remove_path_unsafe_characters(row.name)}.json"), str(row.raw_data))
+        _write_file(os.path.join(folder, _row_name_for_path(row, num_rows)), str(row.raw_data))
         for row in rows
     ))
 
@@ -109,11 +111,18 @@ def _table_path(doc_path: str, table: TableAPI) -> str:
     table_name = _remove_path_unsafe_characters(table.name() + " " + table.id())
     return os.path.join(doc_path, "tables", table.type().to_str(), table_name)
 
-def _column_name_for_path(column: ColumnAPI) -> str:
-    return _remove_path_unsafe_characters(column.name() + " " + column.id())
+def _column_name_for_path(index: int, column: ColumnAPI, num_columns: int) -> str:
+    return _remove_path_unsafe_characters(f"{_format_index(index, num_columns)} - {column.id()} - {column.name()}")
+
+def _row_name_for_path(row: Row, num_rows: int) -> str:
+    return _remove_path_unsafe_characters(f"{_format_index(row.index, num_rows)} - {row.id} - {row.name}.json")
 
 def _remove_path_unsafe_characters(name: str) -> str:
     return name.replace('/', '_')
+
+def _format_index(index: int, max_index: int) -> str:
+    num_digits = len(str(max_index))
+    return str(index).zfill(num_digits)
 
 # Semaphore to make sure we don't get 'too many open files'
 write_semaphore = asyncio.Semaphore(512)
