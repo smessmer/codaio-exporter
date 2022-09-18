@@ -103,7 +103,8 @@ async def _write_raw_json_row_files(rows: List[Row], folder: str) -> None:
     ))
 
 def _doc_path(root_path: str, doc: DocAPI) -> str:
-    folder_name = _remove_path_unsafe_characters(doc.folder_name() + " " + doc.folder_id())
+    folder_name = doc.folder_name() or "NO_FOLDER_NAME"
+    folder_name = _remove_path_unsafe_characters(folder_name + " " + doc.folder_id())
     doc_name = _remove_path_unsafe_characters(doc.name() + " " + doc.id())
     return os.path.join(root_path, folder_name, doc_name)
 
