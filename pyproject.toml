@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "codaio-exporter"
-version = "0.3.2"
+version = "0.3.3"
 description = ""
 authors = ["Sebastian Messmer <mail@smessmer.de>"]
 
@@ -12,6 +12,7 @@ dataclasses-json = "^0.5.7"
 rich = "^12.4.4"
 aiofiles = "^0.8.0"
 types-aiofiles = "^0.8.9"
+types-PyYAML = "^6.0.11"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
