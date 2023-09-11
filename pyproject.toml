@@ -1,22 +1,22 @@
 [tool.poetry]
 name = "codaio-exporter"
-version = "0.3.3"
+version = "0.3.4"
 description = ""
 authors = ["Sebastian Messmer <mail@smessmer.de>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-ensure = "^1.0.2"
-aiohttp = "^3.8.1"
-dataclasses-json = "^0.5.7"
-rich = "^12.4.4"
-aiofiles = "^0.8.0"
-types-aiofiles = "^0.8.9"
-types-PyYAML = "^6.0.11"
+ensure = "^1.0.3"
+aiohttp = "^3.8.5"
+dataclasses-json = "^0.6.0"
+rich = "^13.5.2"
+aiofiles = "^23.2.1"
+types-aiofiles = "^23.2.0.0"
+types-PyYAML = "^6.0.12.11"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
-mypy = "^0.961"
+pytest = "^7.4.2"
+mypy = "^1.5.1"
 
 [tool.poetry.scripts]
 codaio-exporter = "codaio_exporter.__main__:main"
