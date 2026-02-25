@@ -25,7 +25,7 @@ codaio-exporter = "codaio_exporter.__main__:main"
 [dependency-groups]
 dev = [
     "pytest>=8,<10",
-    "pytest-asyncio>=0.24,<1",
+    "pytest-asyncio>=0.24,<2",
     "pyright>=1.1.390,<2",
     "types-aiofiles>=25.1.0.20251011,<26",
     "types-PyYAML>=6.0.12.11,<7",
