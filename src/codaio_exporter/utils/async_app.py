@@ -1,5 +1,5 @@
-from abc import ABCMeta, abstractmethod
 import asyncio
+from abc import ABCMeta, abstractmethod
 
 
 class AsyncApp(metaclass=ABCMeta):

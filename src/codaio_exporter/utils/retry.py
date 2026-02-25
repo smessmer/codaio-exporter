@@ -1,12 +1,12 @@
-from typing import ParamSpec, TypeVar, Callable, Awaitable
-from functools import wraps
-import logging
 import asyncio
+import logging
 import sys
+from collections.abc import Awaitable, Callable
+from functools import wraps
+from typing import ParamSpec, TypeVar
 
-
-P = ParamSpec('P')
-R = TypeVar('R')
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 ## Function decorator that retries on exceptions, at most `max_num_retries` retries, i.e. `max_num_retries + 1` calls
@@ -14,11 +14,11 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         @wraps(func)
         async def inner(*args: P.args, **kwds: P.kwargs) -> R:
-            remaining_retries =  max_num_retries
+            remaining_retries = max_num_retries
             while True:
                 try:
                     return await func(*args, **kwds)
-                except:
+                except BaseException:
                     remaining_retries -= 1
                     if remaining_retries < 0:
                         raise
@@ -27,5 +27,7 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
                         logging.debug(f"Error was {sys.exc_info()[1]}")
                         # Let's sleep a bit just in case the server is in a temporarily bad state
                         await asyncio.sleep(5)
+
         return inner
+
     return decorator

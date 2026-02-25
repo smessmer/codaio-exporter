@@ -1,4 +1,6 @@
-from typing import Dict, Any, AsyncGenerator, final, Final, Optional
+from collections.abc import AsyncGenerator
+from typing import Any, Final, final
+
 from codaio_exporter.api.client import Client
 from codaio_exporter.api.parse import parse_str
 from codaio_exporter.api.table import TableAPI
@@ -6,12 +8,12 @@ from codaio_exporter.api.table import TableAPI
 
 @final
 class DocAPI:
-    def __init__(self, client: Client, data: Dict[str, Any]):
+    def __init__(self, client: Client, data: dict[str, Any]):
         self._client: Final = client
         self._data: Final = data
         self._api_root: Final = f"/docs/{self.id()}"
 
-    def raw_data(self) -> Dict[str, Any]:
+    def raw_data(self) -> dict[str, Any]:
         return self._data
 
     def id(self) -> str:
@@ -22,8 +24,8 @@ class DocAPI:
 
     def folder_id(self) -> str:
         return parse_str(self._data["folder"]["id"])
-    
-    def folder_name(self) -> Optional[str]:
+
+    def folder_name(self) -> str | None:
         if "name" in self._data["folder"]:
             return parse_str(self._data["folder"]["name"])
         else:

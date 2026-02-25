@@ -1,9 +1,11 @@
-from typing import Dict, Any, AsyncGenerator, List, Optional, Callable, final, Final
+from collections.abc import AsyncGenerator, Callable
 from enum import Enum
-from codaio_exporter.api.parse import parse_str
-from codaio_exporter.api.column import ColumnAPI
-from codaio_exporter.api.row import RowAPI
+from typing import Any, Final, final
+
 from codaio_exporter.api.client import Client
+from codaio_exporter.api.column import ColumnAPI
+from codaio_exporter.api.parse import parse_str
+from codaio_exporter.api.row import RowAPI
 
 
 @final
@@ -22,12 +24,12 @@ class TableType(Enum):
 
 @final
 class TableAPI:
-    def __init__(self, client: Client, doc_api_root: str, data: Dict[str, Any]):
+    def __init__(self, client: Client, doc_api_root: str, data: dict[str, Any]):
         self._data: Final = data
         self._client: Final = client
         self._api_root: Final = f"{doc_api_root}/tables/{self.id()}"
 
-    def raw_data(self) -> Dict[str, Any]:
+    def raw_data(self) -> dict[str, Any]:
         return self._data
 
     def id(self) -> str:
@@ -53,14 +55,16 @@ class TableAPI:
         async for row in self._client.get_list(f"{self._api_root}/rows"):
             yield RowAPI(row)
 
-    async def delete_rows(self, row_ids: List[str], on_issued: Optional[Callable[[], None]] = None) -> None:
+    async def delete_rows(self, row_ids: list[str], on_issued: Callable[[], None] | None = None) -> None:
         await self._client.delete(f"{self._api_root}/rows", data={"rowIds": row_ids}, on_issued=on_issued)
 
     # Each entry of rows is a Dict from column id to value
-    async def insert_rows(self, rows: List[Dict[str, str]], on_issued: Optional[Callable[[], None]] = None) -> None:
-        def format_cell(column: str, value: str) -> Dict[str, str]:
+    async def insert_rows(self, rows: list[dict[str, str]], on_issued: Callable[[], None] | None = None) -> None:
+        def format_cell(column: str, value: str) -> dict[str, str]:
             return {"column": column, "value": value}
-        def format_row(row: Dict[str, str]) -> List[Dict[str, str]]:
+
+        def format_row(row: dict[str, str]) -> list[dict[str, str]]:
             return [format_cell(column, value) for (column, value) in row.items()]
+
         rows_data = [{"cells": format_row(row)} for row in rows]
         await self._client.post(f"{self._api_root}/rows", data={"rows": rows_data}, on_issued=on_issued)

@@ -1,10 +1,11 @@
-from typing import Callable, Awaitable, TypeVar, ParamSpec, final, Final
 from asyncio import Semaphore
+from collections.abc import Awaitable, Callable
 from functools import wraps
+from typing import Final, ParamSpec, TypeVar, final
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-P = ParamSpec('P')
-R = TypeVar('R')
 
 ## Allows at most `max_num_tasks` concurrent calls and blocks other calls until a running one has returned
 @final

@@ -1,16 +1,19 @@
-from typing import final, Final, Dict, Any, AsyncGenerator, NewType, Optional, Callable
-import aiohttp
-import logging
 import asyncio
+import logging
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
+from typing import Any, Final, NewType, final
 
-from codaio_exporter.api.parse import parse_dict_str_any, parse_str, parse_bool
+import aiohttp
+
+from codaio_exporter.api.parse import parse_bool, parse_dict_str_any, parse_str
+from codaio_exporter.utils.concurrencylimit import ConcurrencyLimit
 from codaio_exporter.utils.ratelimit import AdaptiveRateLimit
 from codaio_exporter.utils.retry import retry
-from codaio_exporter.utils.concurrencylimit import ConcurrencyLimit
+
 
 @asynccontextmanager
-async def make_client(api_token: str) -> AsyncGenerator['Client', None]:
+async def make_client(api_token: str) -> AsyncGenerator["Client", None]:
     async with aiohttp.ClientSession() as session:
         yield Client(session, api_token)
 
@@ -18,17 +21,22 @@ async def make_client(api_token: str) -> AsyncGenerator['Client', None]:
 class CodaError(Exception):
     pass
 
+
 class NotFound(CodaError):
     pass
+
 
 class TooManyRequests(CodaError):
     pass
 
+
 class ContentTypeError(CodaError):
     pass
 
+
 class StatusCodeError(CodaError):
     pass
+
 
 class ResponseFormatError(CodaError):
     pass
@@ -40,7 +48,7 @@ _API_ENDPOINT = "https://coda.io/apis/v1"
 _request_limit = AdaptiveRateLimit(TooManyRequests, 10)
 _concurrency_limit = ConcurrencyLimit(50)
 
-RequestId = NewType('RequestId', str)
+RequestId = NewType("RequestId", str)
 
 
 @final
@@ -50,14 +58,18 @@ class Client:
         self._authorization: Final = {"Authorization": f"Bearer {api_token}"}
 
     @_concurrency_limit
-    async def get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
+    async def get_item(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        if params is None:
+            params = {}
         response = await self._get_item(endpoint, params=params)
         return response
 
     @retry(10)
     @_request_limit
-    async def _get_item(self, endpoint: str, params: Dict[str, Any] = {}) -> Dict[str, Any]:
-        logging.info(f"GET {endpoint} {str(params)}")
+    async def _get_item(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        if params is None:
+            params = {}
+        logging.info(f"GET {endpoint} {params!s}")
         async with self._session.get(_API_ENDPOINT + endpoint, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
@@ -65,13 +77,14 @@ class Client:
                 logging.info(f"GET {endpoint}: responded")
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
-                raise ContentTypeError(f"Content type error for {content_text}", e)
+                raise ContentTypeError(f"Content type error for {content_text}", e) from e
 
             return parse_dict_str_any(content)
 
-
-    async def get_list(self, endpoint: str, params: Dict[str, Any] = {}) -> AsyncGenerator[Any, None]:
-        logging.info(f"GET {endpoint} {str(params)}")
+    async def get_list(self, endpoint: str, params: dict[str, Any] | None = None) -> AsyncGenerator[Any, None]:
+        if params is None:
+            params = {}
+        logging.info(f"GET {endpoint} {params!s}")
 
         params["limit"] = _MAX_PAGE_SIZE
 
@@ -87,24 +100,26 @@ class Client:
                 yield item
 
         logging.info(f"GET {endpoint}: responded")
-    
+
     @_concurrency_limit
     @retry(10)
     @_request_limit
-    async def _get_page(self, url: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _get_page(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         async with self._session.get(url, params=params, headers=self._authorization) as response:
             try:
                 await _handle_potential_error(response)
                 content = await response.json()
             except aiohttp.client_exceptions.ContentTypeError as e:
                 content_text = await response.text()
-                raise ContentTypeError(f"Content type error for {content_text}", e)
+                raise ContentTypeError(f"Content type error for {content_text}", e) from e
             return parse_dict_str_any(content)
 
     @_concurrency_limit
     @retry(10)
     @_request_limit
-    async def post(self, endpoint: str, data: Dict[str, Any], on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
+    async def post(
+        self, endpoint: str, data: dict[str, Any], on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
+    ) -> RequestId:
         logging.info(f"POST {endpoint}")
         async with self._session.post(
             _API_ENDPOINT + endpoint,
@@ -123,8 +138,12 @@ class Client:
     @_concurrency_limit
     @retry(10)
     @_request_limit
-    async def delete(self, endpoint: str, data: Dict[str, Any] = {}, on_issued: Optional[Callable[[], None]] = None, wait_for_completion: bool = True) -> RequestId:
-        logging.info(f"DELETE {endpoint} {str(data)}")
+    async def delete(
+        self, endpoint: str, data: dict[str, Any] | None = None, on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
+    ) -> RequestId:
+        if data is None:
+            data = {}
+        logging.info(f"DELETE {endpoint} {data!s}")
 
         async with self._session.delete(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
             request_id = await _handle_mutation_response(response)
@@ -141,10 +160,11 @@ class Client:
         if "completed" not in response:
             raise ResponseFormatError(f"Expected 'completed' to be in response but response was {response}")
         return parse_bool(response["completed"])
-    
+
     async def _wait_until_mutation_is_completed(self, request_id: RequestId) -> None:
         while not await self._get_mutation_is_completed(request_id):
             await asyncio.sleep(1)
+
 
 async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
     if response.ok:
@@ -155,13 +175,10 @@ async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
     error_dict = {404: NotFound, 429: TooManyRequests}
 
     if response.status in error_dict:
-        raise error_dict[response.status](
-            f'Status code: {response.status}. Message: {content["message"]}'
-        )
+        raise error_dict[response.status](f"Status code: {response.status}. Message: {content['message']}")
 
-    raise CodaError(
-        f'Status code: {response.status}. Message: {content["message"]}'
-    )
+    raise CodaError(f"Status code: {response.status}. Message: {content['message']}")
+
 
 async def _handle_mutation_response(response: aiohttp.ClientResponse) -> RequestId:
     try:
@@ -174,4 +191,4 @@ async def _handle_mutation_response(response: aiohttp.ClientResponse) -> Request
         return RequestId(parse_str(content["requestId"]))
     except aiohttp.client_exceptions.ContentTypeError as e:
         content_text = await response.text()
-        raise ContentTypeError(f"Content type error for {content_text}", e)
+        raise ContentTypeError(f"Content type error for {content_text}", e) from e

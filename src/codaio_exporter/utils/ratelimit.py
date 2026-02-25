@@ -1,9 +1,11 @@
-import time, asyncio
-from typing import Callable, Any, Awaitable, Type, TypeVar, ParamSpec, final, Final
+import asyncio
+import logging
+import time
+from collections.abc import Awaitable, Callable
+from enum import Enum
 from functools import wraps
 from math import ceil
-import logging
-from enum import Enum
+from typing import Final, ParamSpec, TypeVar, final
 
 
 @final
@@ -22,14 +24,15 @@ class _State(Enum):
     recover = "recover"
 
 
-P = ParamSpec('P')
-R = TypeVar('R')
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 ## Allows concurrent calls to an async function, but if a predefined exception happens (e.g. TOO_MANY_REQUESTS),
 ## all calls will be blocked for a defined backoff interval.
 @final
 class AdaptiveRateLimit:
-    def __init__(self, backoff_exception: Type[BaseException], backoff_interval_sec: int):
+    def __init__(self, backoff_exception: type[BaseException], backoff_interval_sec: int):
         self._state = _State.normal
         self._backoff_until = 0
         self._backoff_interval_sec: Final = backoff_interval_sec
@@ -53,7 +56,7 @@ class AdaptiveRateLimit:
 
                 if is_backoff:
                     await self._wait_backoff()
-                
+
                     if self._state == _State.recover:
                         # While we were in backoff, another request went into backoff, then into recover.
                         # Since we're waiting for that recover thread, we should pause ourselves.
@@ -65,7 +68,7 @@ class AdaptiveRateLimit:
                         # Some other thread already went through _State.recover and put us back to _State.normal
                         # while we were in backoff.
                         continue
-                    
+
                 # If we're here, then either
                 # * is_backoff == False => We're in _State.normal
                 # * is_backoff == True  => We were in _State.backoff but we're the first request to make it out of _State.backoff.
@@ -75,7 +78,7 @@ class AdaptiveRateLimit:
                     assert self._state == _State.recover
                 else:
                     assert self._state == _State.normal
-                
+
                 try:
                     if is_backoff:
                         logging.debug(f"Request {request_index}: Attempting another request after backoff")
@@ -90,7 +93,9 @@ class AdaptiveRateLimit:
                     return result
                 except self._backoff_exception:
                     if is_backoff:
-                        logging.debug(f"Request {request_index}: Attempting another request after backoff...still hitting rate limit. Backing off again.")
+                        logging.debug(
+                            f"Request {request_index}: Attempting another request after backoff...still hitting rate limit. Backing off again."
+                        )
                         self._state = _State.backoff
                     elif self._state == _State.normal:
                         logging.debug(f"Request {request_index}: Rate limit exception detected. Backing off.")
@@ -107,7 +112,9 @@ class AdaptiveRateLimit:
                     # An unrelated error happened
                     if is_backoff:
                         # But we're the task responsible for recovering from _State.recovery
-                        logging.debug(f"Request {request_index}: Attempting another request after backoff...failed with error unrelated to rate limit. Waking a different request.")
+                        logging.debug(
+                            f"Request {request_index}: Attempting another request after backoff...failed with error unrelated to rate limit. Waking a different request."
+                        )
                         # Sleep for a bit in case the server has temporary issues
                         await asyncio.sleep(1)
                         # Setting the state back to _State.backoff but without a timeout.

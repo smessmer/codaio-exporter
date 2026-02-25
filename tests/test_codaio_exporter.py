@@ -1,4 +1,4 @@
-#from codaio_exporter import __version__
+# from codaio_exporter import __version__
 
 
 def test_version() -> None:

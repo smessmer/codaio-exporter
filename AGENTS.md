@@ -9,10 +9,12 @@ Async Python CLI tool that exports tables from Coda.io documents to local files 
 ## Quick reference
 
 ```bash
-uv sync                         # Install dependencies
-uv run codaio-exporter          # Run the CLI
-uv run mypy                     # Type check (strict mode)
-uv run pytest                   # Run tests
+uv sync                                 # Install dependencies
+uv run codaio-exporter                  # Run the CLI
+uv run mypy                             # Type check (strict mode)
+uv run pytest                           # Run tests
+uv run ruff check src/ tests/           # Lint
+uv run ruff format --check src/ tests/  # Format check
 ```
 
 CLI usage:
