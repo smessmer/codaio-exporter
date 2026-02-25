@@ -1,26 +1,37 @@
-[tool.poetry]
+[project]
 name = "codaio-exporter"
 version = "0.3.4"
 description = ""
-authors = ["Sebastian Messmer <mail@smessmer.de>"]
+authors = [{ name = "Sebastian Messmer", email = "mail@smessmer.de" }]
+requires-python = ">=3.10,<4"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "ensure>=1.0.3,<2",
+    "aiohttp>=3.8.5,<4",
+    "dataclasses-json>=0.6.0,<0.7",
+    "rich>=13.5.2,<14",
+    "aiofiles>=23.2.1,<24",
+    "PyYAML>=6.0,<7",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-ensure = "^1.0.3"
-aiohttp = "^3.8.5"
-dataclasses-json = "^0.6.0"
-rich = "^13.5.2"
-aiofiles = "^23.2.1"
-types-aiofiles = "^23.2.0.0"
-types-PyYAML = "^6.0.12.11"
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.4.2"
-mypy = "^1.5.1"
-
-[tool.poetry.scripts]
+[project.scripts]
 codaio-exporter = "codaio_exporter.__main__:main"
 
+[dependency-groups]
+dev = [
+    "pytest>=7.4.2,<8",
+    "mypy>=1.5.1,<1.6",
+    "types-aiofiles>=23.2.0.0,<24",
+    "types-PyYAML>=6.0.12.11,<7",
+]
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"

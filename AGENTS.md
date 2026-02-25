@@ -4,15 +4,15 @@
 
 Async Python CLI tool that exports tables from Coda.io documents to local files (CSV, HTML, JSON, YAML) and can reimport previously exported tables back into Coda.io. Uses asyncio throughout with adaptive rate limiting, retries, and concurrency control.
 
-**Version:** 0.3.4 | **Python:** 3.10+ | **Package manager:** Poetry
+**Version:** 0.3.4 | **Python:** 3.10+ | **Package manager:** uv
 
 ## Quick reference
 
 ```bash
-poetry install                  # Install dependencies
-poetry run codaio-exporter      # Run the CLI
-poetry run mypy                 # Type check (strict mode)
-poetry run pytest               # Run tests
+uv sync                         # Install dependencies
+uv run codaio-exporter          # Run the CLI
+uv run mypy                     # Type check (strict mode)
+uv run pytest                   # Run tests
 ```
 
 CLI usage:
@@ -30,7 +30,7 @@ codaio-exporter --api-token <TOKEN> reimport --src-dir ./out --dest-doc-id <ID>
 ## Repository structure
 
 ```
-codaio_exporter/
+src/codaio_exporter/
 ├── __main__.py              # Entry point, CLI arg parsing (argparse)
 ├── export.py                # Export orchestration, file writing
 ├── reimport.py              # Reimport orchestration, schema validation
@@ -55,7 +55,7 @@ codaio_exporter/
 tests/
 └── test_codaio_exporter.py  # Test suite (pytest)
 
-pyproject.toml               # Poetry config, dependencies, entry point
+pyproject.toml               # Project config, dependencies, entry point (PEP 621 + uv)
 mypy.ini                     # Strict mypy configuration
 ```
 
@@ -160,19 +160,19 @@ Custom exception hierarchy rooted at `CodaError`:
 | ensure | Runtime type assertions in `parse.py` |
 | PyYAML | YAML output format |
 
-Dev: `pytest`, `mypy`
+Dev (via dependency group): `pytest`, `mypy`, `types-aiofiles`, `types-PyYAML`
 
 ## Common tasks
 
 ### Adding a new export format
 
-1. Add generation method to `Table` in `codaio_exporter/table.py`
-2. Call it from `_export_rows()` in `codaio_exporter/export.py`
+1. Add generation method to `Table` in `src/codaio_exporter/table.py`
+2. Call it from `_export_rows()` in `src/codaio_exporter/export.py`
 3. Write output via `_write_file()` (respects the file-write semaphore)
 
 ### Adding a new API resource
 
-1. Create `codaio_exporter/api/new_resource.py` with a `@final` wrapper class
+1. Create `src/codaio_exporter/api/new_resource.py` with a `@final` wrapper class
 2. Add typed accessors using `parse_*()` helpers
 3. Add list/get methods to the parent resource's API class
 4. Use `client.get_list()` for paginated endpoints, `client.get_item()` for single items
