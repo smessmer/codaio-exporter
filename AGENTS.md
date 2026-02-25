@@ -68,7 +68,14 @@ src/codaio_exporter/
     └── generator.py         # collect() to materialize async generators
 
 tests/
-└── test_codaio_exporter.py  # Test suite (pytest)
+├── conftest.py              # Shared fixtures and factory helpers
+├── test_api_client.py       # Client error handling tests
+├── test_api_column.py       # ColumnAPI tests
+├── test_api_doc.py          # DocAPI tests
+├── test_api_parse.py        # parse_* helper tests
+├── test_api_row.py          # RowAPI tests
+├── test_api_table.py        # TableAPI tests
+└── test_errors.py           # Application error hierarchy tests
 
 pyproject.toml               # Project config, dependencies, entry point (PEP 621 + uv)
 ```
@@ -178,7 +185,7 @@ Two exception hierarchies:
 | aiofiles | Async file I/O |
 | PyYAML | YAML output format |
 
-Dev (via dependency group): `pytest`, `pyright`, `ruff`, `types-aiofiles`, `types-PyYAML`
+Dev (via dependency group): `pytest`, `pytest-asyncio`, `pyright`, `ruff`, `types-aiofiles`, `types-PyYAML`
 
 ## Common tasks
 

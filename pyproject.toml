@@ -25,6 +25,7 @@ codaio-exporter = "codaio_exporter.__main__:main"
 [dependency-groups]
 dev = [
     "pytest>=8,<10",
+    "pytest-asyncio>=0.24,<1",
     "pyright>=1.1.390,<2",
     "types-aiofiles>=25.1.0.20251011,<26",
     "types-PyYAML>=6.0.12.11,<7",
@@ -44,6 +45,9 @@ reportPropertyTypeMismatch = true
 reportUninitializedInstanceVariable = true
 reportMissingSuperCall = true
 reportUnreachable = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["uv_build>=0.10.2,<0.11.0"]
