@@ -38,6 +38,14 @@ include = ["src/codaio_exporter", "tests"]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
 reportUnnecessaryTypeIgnoreComment = true
+reportCallInDefaultInitializer = true
+reportImplicitOverride = true
+reportImplicitStringConcatenation = true
+reportImportCycles = true
+reportPropertyTypeMismatch = true
+reportUninitializedInstanceVariable = true
+reportMissingSuperCall = true
+reportUnreachable = true
 
 [build-system]
 requires = ["uv_build>=0.10.2,<0.11.0"]
