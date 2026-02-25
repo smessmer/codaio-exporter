@@ -75,7 +75,7 @@ class Client:
                 await _handle_potential_error(response)
                 content = await response.json()
                 logging.info(f"GET {endpoint}: responded")
-            except aiohttp.client_exceptions.ContentTypeError as e:
+            except aiohttp.ContentTypeError as e:
                 content_text = await response.text()
                 raise ContentTypeError(f"Content type error for {content_text}", e) from e
 
@@ -109,7 +109,7 @@ class Client:
             try:
                 await _handle_potential_error(response)
                 content = await response.json()
-            except aiohttp.client_exceptions.ContentTypeError as e:
+            except aiohttp.ContentTypeError as e:
                 content_text = await response.text()
                 raise ContentTypeError(f"Content type error for {content_text}", e) from e
             return parse_dict_str_any(content)
@@ -189,6 +189,6 @@ async def _handle_mutation_response(response: aiohttp.ClientResponse) -> Request
         if "requestId" not in content:
             raise ResponseFormatError(f"Expected 'requestId' in response but response was {content}")
         return RequestId(parse_str(content["requestId"]))
-    except aiohttp.client_exceptions.ContentTypeError as e:
+    except aiohttp.ContentTypeError as e:
         content_text = await response.text()
         raise ContentTypeError(f"Content type error for {content_text}", e) from e

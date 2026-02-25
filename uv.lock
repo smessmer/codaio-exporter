@@ -186,7 +186,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "mypy" },
+    { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "types-aiofiles" },
@@ -205,7 +205,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mypy", specifier = ">=1.5.1,<1.6" },
+    { name = "pyright", specifier = ">=1.1.390,<2" },
     { name = "pytest", specifier = ">=7.4.2,<8" },
     { name = "ruff", specifier = ">=0.9,<1" },
     { name = "types-aiofiles", specifier = ">=23.2.0.0,<24" },
@@ -569,41 +569,21 @@ wheels = [
 ]
 
 [[package]]
-name = "mypy"
-version = "1.5.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mypy-extensions" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/33/f9/c84b68e4a754f5ce200dcf0786aa489164fa9d9dee84e375bd7d99caf637/mypy-1.5.1.tar.gz", hash = "sha256:b031b9601f1060bf1281feab89697324726ba0c0bae9d7cd7ab4b690940f0b92", size = 2891640, upload-time = "2023-08-16T16:54:46.922Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/f2/f423ed3f405d5986e90990464cdc717a7745837e152400f4e8d6be965a35/mypy-1.5.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f33592ddf9655a4894aef22d134de7393e95fcbdc2d15c1ab65828eee5c66c70", size = 10572983, upload-time = "2023-08-16T16:53:18.826Z" },
-    { url = "https://files.pythonhosted.org/packages/51/6c/b806cf96ca3236709ae41ff8fecb9c983e95c4ac9c84ccd0a7ae74230792/mypy-1.5.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:258b22210a4a258ccd077426c7a181d789d1121aca6db73a83f79372f5569ae0", size = 9647774, upload-time = "2023-08-16T16:54:39.365Z" },
-    { url = "https://files.pythonhosted.org/packages/6c/92/68315e0aec041c4a5c720289f6c3ff1234742362659f3229e1668898c250/mypy-1.5.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a9ec1f695f0c25986e6f7f8778e5ce61659063268836a38c951200c57479cc12", size = 12106090, upload-time = "2023-08-16T16:54:30.336Z" },
-    { url = "https://files.pythonhosted.org/packages/9d/5f/6ccabe78465c6b82a08519a52a7ffdcc450edbe7e338a223e3169cda588e/mypy-1.5.1-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:abed92d9c8f08643c7d831300b739562b0a6c9fcb028d211134fc9ab20ccad5d", size = 12176875, upload-time = "2023-08-16T16:54:43.569Z" },
-    { url = "https://files.pythonhosted.org/packages/27/e8/15e7c722cc0196a0ba296f86b68497c5de3b662ba6bf2c9eaabd18462974/mypy-1.5.1-cp310-cp310-win_amd64.whl", hash = "sha256:a156e6390944c265eb56afa67c74c0636f10283429171018446b732f1a05af25", size = 8921319, upload-time = "2023-08-16T16:54:17.86Z" },
-    { url = "https://files.pythonhosted.org/packages/f5/e9/0207b4be5f20b15a2a8fc5507941cbf18887c026d21486ad62dd65054dc1/mypy-1.5.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:6ac9c21bfe7bc9f7f1b6fae441746e6a106e48fc9de530dea29e8cd37a2c0cc4", size = 10463137, upload-time = "2023-08-16T16:53:22.373Z" },
-    { url = "https://files.pythonhosted.org/packages/3b/62/e4a096ff55326bddc51f2a532cede2fa2f5d02930e1085aaa4e46bf64dd7/mypy-1.5.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:51cb1323064b1099e177098cb939eab2da42fea5d818d40113957ec954fc85f4", size = 9543725, upload-time = "2023-08-16T16:54:01.624Z" },
-    { url = "https://files.pythonhosted.org/packages/66/51/6ef9d704c9d1f2197e2b966d0e50948879b97c6057f2652a9ba28e563c08/mypy-1.5.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:596fae69f2bfcb7305808c75c00f81fe2829b6236eadda536f00610ac5ec2243", size = 11988272, upload-time = "2023-08-16T16:54:09.856Z" },
-    { url = "https://files.pythonhosted.org/packages/04/ba/117a7497a714a8a62867e752fd8ba63eeac8e9a46bc9fc24bd85b00c2c84/mypy-1.5.1-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:32cb59609b0534f0bd67faebb6e022fe534bdb0e2ecab4290d683d248be1b275", size = 12067086, upload-time = "2023-08-16T16:53:48.669Z" },
-    { url = "https://files.pythonhosted.org/packages/4e/11/ac861ca5d9b16fd5b781c1941254d4e382e8eaab90e11f41f193d9222b7e/mypy-1.5.1-cp311-cp311-win_amd64.whl", hash = "sha256:159aa9acb16086b79bbb0016145034a1a05360626046a929f84579ce1666b315", size = 8914287, upload-time = "2023-08-16T16:53:58.067Z" },
-    { url = "https://files.pythonhosted.org/packages/ff/87/7a81805e19648bc1f27569b1897774106aeca917b91a99998efb9a351525/mypy-1.5.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:f6b0e77db9ff4fda74de7df13f30016a0a663928d669c9f2c057048ba44f09bb", size = 10518948, upload-time = "2023-08-16T16:53:30.855Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/da/71b2bcbf64a1e51dd668ce1b9a149c4bdada0fb1b8cd023b7087bf6c0ab0/mypy-1.5.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:26f71b535dfc158a71264e6dc805a9f8d2e60b67215ca0bfa26e2e1aa4d4d373", size = 9511651, upload-time = "2023-08-16T16:54:14.149Z" },
-    { url = "https://files.pythonhosted.org/packages/bb/a1/eb6754a227d1b94058856962a5726e519abbb89433094111eff52e405af0/mypy-1.5.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2fc3a600f749b1008cc75e02b6fb3d4db8dbcca2d733030fe7a3b3502902f161", size = 12025737, upload-time = "2023-08-16T16:54:35.348Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/41/8c200b001eba5cfa4f3b12abc9892b5af372da4613e77f1819cc08e2c15f/mypy-1.5.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:26fb32e4d4afa205b24bf645eddfbb36a1e17e995c5c99d6d00edb24b693406a", size = 12123565, upload-time = "2023-08-16T16:53:14.683Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/b0/b9cb9ac4253d67442f3717befc5c39eff80c4d5a3b675414a281f6fbd486/mypy-1.5.1-cp312-cp312-win_amd64.whl", hash = "sha256:82cb6193de9bbb3844bab4c7cf80e6227d5225cc7625b068a06d005d861ad5f1", size = 9005729, upload-time = "2023-08-16T16:54:05.454Z" },
-    { url = "https://files.pythonhosted.org/packages/d7/e0/4f80f9d3a7dffb97d7ba3b2eb6b06011d311bfd645727e51b003db482d48/mypy-1.5.1-py3-none-any.whl", hash = "sha256:f757063a83970d67c444f6e01d9550a7402322af3557ce7630d3c957386fa8f5", size = 2483733, upload-time = "2023-08-16T16:52:59.198Z" },
-]
-
-[[package]]
 name = "mypy-extensions"
 version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8dac321cda606860fa4548858c0cc45d9d1d4ca2628b/mypy_extensions-1.1.0.tar.gz", hash = "sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558", size = 6343, upload-time = "2025-04-22T14:54:24.164Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
+]
+
+[[package]]
+name = "nodeenv"
+version = "1.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
 ]
 
 [[package]]
@@ -745,6 +725,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b0/77/a5b8c569bf593b0140bde72ea885a803b82086995367bf2037de0159d924/pygments-2.19.2.tar.gz", hash = "sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887", size = 4968631, upload-time = "2025-06-21T13:39:12.283Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl", hash = "sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b", size = 1225217, upload-time = "2025-06-21T13:39:07.939Z" },
+]
+
+[[package]]
+name = "pyright"
+version = "1.1.408"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nodeenv" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/74/b2/5db700e52554b8f025faa9c3c624c59f1f6c8841ba81ab97641b54322f16/pyright-1.1.408.tar.gz", hash = "sha256:f28f2321f96852fa50b5829ea492f6adb0e6954568d1caa3f3af3a5f555eb684", size = 4400578, upload-time = "2026-01-08T08:07:38.795Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0c/82/a2c93e32800940d9573fb28c346772a14778b84ba7524e691b324620ab89/pyright-1.1.408-py3-none-any.whl", hash = "sha256:090b32865f4fdb1e0e6cd82bf5618480d48eecd2eb2e70f960982a3d9a4c17c1", size = 6399144, upload-time = "2026-01-08T08:07:37.082Z" },
 ]
 
 [[package]]

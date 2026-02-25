@@ -3,7 +3,7 @@ import os
 from typing import final
 
 import aiofiles
-from ensure import check  # type: ignore
+from ensure import check  # type: ignore[import-untyped]
 
 from codaio_exporter.api import make_api
 from codaio_exporter.api.doc import DocAPI
@@ -92,7 +92,7 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
 
 async def _load_table(path: str, progress_handler: ProgressHandler) -> Table:
     json = await _read_file(path)
-    result = Table.from_json(json)
+    result = Table.from_json(json)  # pyright: ignore[reportUnknownMemberType]
     progress_handler.increment_load_export()
     return result
 
@@ -152,12 +152,12 @@ async def _delete_all_rows(table_api: TableAPI, progress_handler: ProgressHandle
 
 async def _insert_rows(table_api: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
     def format_row(row: Row) -> dict[str, str]:
-        check(len(table.columns)).equals(len(row.cells)).or_raise(
-            lambda _: Exception(
+        check(len(table.columns)).equals(len(row.cells)).or_raise(  # pyright: ignore[reportUnknownMemberType]
+            lambda _: Exception(  # pyright: ignore[reportUnknownLambdaType]
                 f"Table {table.name} {table.id}: Export has {len(table.columns)} columns but a row in the export has {len(row.cells)} columns"
             )
         )
-        result = {}
+        result: dict[str, str] = {}
         for i in range(len(row.cells)):
             if table.columns[i].formula is None:
                 result[table.columns[i].id] = row.cells[i]

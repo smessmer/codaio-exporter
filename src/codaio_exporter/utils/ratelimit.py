@@ -57,7 +57,7 @@ class AdaptiveRateLimit:
                 if is_backoff:
                     await self._wait_backoff()
 
-                    if self._state == _State.recover:
+                    if self._state == _State.recover:  # pyright: ignore[reportUnnecessaryComparison]  # state changes concurrently
                         # While we were in backoff, another request went into backoff, then into recover.
                         # Since we're waiting for that recover thread, we should pause ourselves.
                         continue

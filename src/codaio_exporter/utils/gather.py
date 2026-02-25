@@ -1,15 +1,15 @@
 import asyncio
 import logging
 from collections.abc import Coroutine
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 T = TypeVar("T")
 
 
 # Like asyncio.gather(), but if one of the tasks fails, all others are cancelled instead of continuing to execute.
 async def gather_cancel_on_first_error(*coroutines: Coroutine[Any, Any, T]) -> list[T]:
+    futures = [asyncio.create_task(c) for c in coroutines]
     try:
-        futures = [asyncio.create_task(c) for c in coroutines]
         return await asyncio.gather(*futures)
     except:
         for future in futures:
@@ -28,4 +28,4 @@ async def gather_raise_first_error_after_all_tasks_complete(*coroutines: Corouti
     if len(errors) > 0:
         raise errors[0]
 
-    return results
+    return cast(list[T], results)

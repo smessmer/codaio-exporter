@@ -27,11 +27,17 @@ codaio-exporter = "codaio_exporter.__main__:main"
 [dependency-groups]
 dev = [
     "pytest>=7.4.2,<8",
-    "mypy>=1.5.1,<1.6",
+    "pyright>=1.1.390,<2",
     "types-aiofiles>=23.2.0.0,<24",
     "types-PyYAML>=6.0.12.11,<7",
     "ruff>=0.9,<1",
 ]
+
+[tool.pyright]
+include = ["src/codaio_exporter", "tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+reportUnnecessaryTypeIgnoreComment = true
 
 [build-system]
 requires = ["uv_build>=0.10.2,<0.11.0"]

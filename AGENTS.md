@@ -11,7 +11,7 @@ Async Python CLI tool that exports tables from Coda.io documents to local files 
 ```bash
 uv sync                                 # Install dependencies
 uv run codaio-exporter                  # Run the CLI
-uv run mypy                             # Type check (strict mode)
+uv run pyright                          # Type check (strict mode)
 uv run pytest                           # Run tests
 uv run ruff check src/ tests/           # Lint
 uv run ruff format --check src/ tests/  # Format check
@@ -58,7 +58,6 @@ tests/
 └── test_codaio_exporter.py  # Test suite (pytest)
 
 pyproject.toml               # Project config, dependencies, entry point (PEP 621 + uv)
-mypy.ini                     # Strict mypy configuration
 ```
 
 ## Architecture
@@ -80,7 +79,7 @@ __main__.py  →  export.py / reimport.py  →  api/  →  utils/
 
 ### Type safety
 
-mypy strict mode is mandatory. Every function needs full type annotations. Key patterns:
+pyright strict mode is mandatory. Every function needs full type annotations. Key patterns:
 
 - `@final` decorator on classes to prevent inheritance
 - `Final` annotation on immutable instance variables
@@ -162,7 +161,7 @@ Custom exception hierarchy rooted at `CodaError`:
 | ensure | Runtime type assertions in `parse.py` |
 | PyYAML | YAML output format |
 
-Dev (via dependency group): `pytest`, `mypy`, `types-aiofiles`, `types-PyYAML`
+Dev (via dependency group): `pytest`, `pyright`, `ruff`, `types-aiofiles`, `types-PyYAML`
 
 ## Common tasks
 
