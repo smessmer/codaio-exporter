@@ -105,4 +105,4 @@ async def test_retry_sleeps_between_retries(mock_sleep: AsyncMock) -> None:
     await work()
     assert mock_sleep.call_count == 2
     for call in mock_sleep.call_args_list:
-        assert call.args[0] == 5
+        assert 5 <= call.args[0] <= 10

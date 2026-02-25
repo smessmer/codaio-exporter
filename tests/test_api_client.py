@@ -17,12 +17,13 @@ from codaio_exporter.api.client import (
 )
 
 
-def _make_mock_response(*, ok: bool, status: int, json_data: dict[str, Any]) -> MagicMock:
+def _make_mock_response(*, ok: bool, status: int, json_data: dict[str, Any], headers: dict[str, str] | None = None) -> MagicMock:
     response = MagicMock()
     type(response).ok = PropertyMock(return_value=ok)
     type(response).status = PropertyMock(return_value=status)
     response.json = AsyncMock(return_value=json_data)
     response.text = AsyncMock(return_value="")
+    response.headers = headers or {}
     return response
 
 
@@ -58,8 +59,23 @@ async def test_handle_potential_error_404() -> None:
 
 async def test_handle_potential_error_429() -> None:
     response = _make_mock_response(ok=False, status=429, json_data={"message": "rate limited"})
-    with pytest.raises(TooManyRequests, match="429"):
+    with pytest.raises(TooManyRequests, match="429") as exc_info:
         await _handle_potential_error(response)
+    assert exc_info.value.retry_after is None
+
+
+async def test_handle_potential_error_429_with_retry_after() -> None:
+    response = _make_mock_response(ok=False, status=429, json_data={"message": "rate limited"}, headers={"Retry-After": "5"})
+    with pytest.raises(TooManyRequests, match="429") as exc_info:
+        await _handle_potential_error(response)
+    assert exc_info.value.retry_after == 5.0
+
+
+async def test_handle_potential_error_429_with_invalid_retry_after() -> None:
+    response = _make_mock_response(ok=False, status=429, json_data={"message": "rate limited"}, headers={"Retry-After": "invalid"})
+    with pytest.raises(TooManyRequests, match="429") as exc_info:
+        await _handle_potential_error(response)
+    assert exc_info.value.retry_after is None
 
 
 async def test_handle_potential_error_500() -> None:

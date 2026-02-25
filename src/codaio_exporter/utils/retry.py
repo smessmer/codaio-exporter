@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 import sys
 from collections.abc import Awaitable, Callable
 from functools import wraps
@@ -27,8 +28,8 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
                     else:
                         logging.warning(f"Encountered error {sys.exc_info()[0]}. Retrying ({remaining_retries} remaining attempts)...")
                         logging.debug(f"Error was {sys.exc_info()[1]}")
-                        # Let's sleep a bit just in case the server is in a temporarily bad state
-                        await asyncio.sleep(5)
+                        # Sleep with jitter (5-10s) to avoid thundering herd on retry
+                        await asyncio.sleep(5 + random.random() * 5)
 
         return inner
 

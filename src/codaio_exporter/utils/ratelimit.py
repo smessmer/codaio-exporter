@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 import time
 from collections.abc import Awaitable, Callable
 from enum import Enum
@@ -50,7 +51,7 @@ class AdaptiveRateLimit:
             while True:
                 if self._state == _State.recover:
                     # Another request is currently running to decide for whether we go to normal or back to backoff, let's pause ourselves
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1 + random.random())
                     continue
 
                 # Remember whether we are in backoff because other requests can change it while we're running
@@ -93,7 +94,7 @@ class AdaptiveRateLimit:
                         self._state = _State.normal
                         logging.debug(f"Request {request_index}: Attempting another request after backoff...succeeded. Backoff ended.")
                     return result
-                except self._backoff_exception:
+                except self._backoff_exception as e:
                     if is_backoff:
                         logging.debug(
                             f"Request {request_index}: Attempting another request after backoff...still hitting rate limit. Backing off again."
@@ -109,7 +110,12 @@ class AdaptiveRateLimit:
                         # Another concurrent task already put us into backoff while we were running.
                         # Don't do anything special, just increase self._backoff_until accordingly
                         assert self._state == _State.backoff
-                    self._backoff_until = ceil(time.monotonic() + self._backoff_interval_sec)
+                    # Use Retry-After from the exception if available, otherwise use the default interval.
+                    retry_after = getattr(e, "retry_after", None)
+                    backoff_secs: int | float = self._backoff_interval_sec
+                    if isinstance(retry_after, int | float) and retry_after > 0:
+                        backoff_secs = max(float(retry_after), 1.0)
+                    self._backoff_until = ceil(time.monotonic() + backoff_secs)
                 except:
                     # An unrelated error happened
                     if is_backoff:
@@ -132,5 +138,7 @@ class AdaptiveRateLimit:
     async def _wait_backoff(self) -> None:
         wait_secs = ceil(self._backoff_until - time.monotonic())
         while wait_secs > 0:
-            await asyncio.sleep(wait_secs)
+            # Add 0-25% jitter to spread out requests resuming after backoff.
+            jitter = random.random() * 0.25 * wait_secs
+            await asyncio.sleep(wait_secs + jitter)
             wait_secs = ceil(self._backoff_until - time.monotonic())

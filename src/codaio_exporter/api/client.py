@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any, Final, NewType, final
+from functools import wraps
+from typing import Any, Final, NewType, ParamSpec, TypeVar, final
 
 import aiohttp
 
@@ -12,6 +13,7 @@ from codaio_exporter.api.parse import parse_bool, parse_dict_str_any, parse_str
 from codaio_exporter.utils.concurrencylimit import ConcurrencyLimit
 from codaio_exporter.utils.ratelimit import AdaptiveRateLimit
 from codaio_exporter.utils.retry import retry
+from codaio_exporter.utils.tokenbucket import AdaptiveTokenBucket
 
 
 @asynccontextmanager
@@ -29,7 +31,9 @@ class NotFound(CodaError):
 
 
 class TooManyRequests(CodaError):
-    pass
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after: Final = retry_after
 
 
 class ContentTypeError(CodaError):
@@ -44,11 +48,44 @@ class ResponseFormatError(CodaError):
     pass
 
 
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
 _MAX_PAGE_SIZE = 200
 _API_ENDPOINT = "https://coda.io/apis/v1"
 
+
+@final
+class _TokenBucketDecorator:
+    """Decorator that acquires a token before each request and feeds back
+    success/failure to the adaptive token bucket for rate adjustment.
+
+    Must be the innermost decorator (closest to the actual HTTP call) because
+    AdaptiveRateLimit swallows TooManyRequests in its internal retry loop.
+    """
+
+    def __init__(self, bucket: AdaptiveTokenBucket) -> None:
+        self._bucket: Final = bucket
+
+    def __call__(self, func: Callable[_P, Awaitable[_R]]) -> Callable[_P, Awaitable[_R]]:
+        @wraps(func)
+        async def inner(*args: _P.args, **kwds: _P.kwargs) -> _R:
+            epoch = await self._bucket.acquire()
+            try:
+                result = await func(*args, **kwds)
+                self._bucket.on_success()
+                return result
+            except TooManyRequests as e:
+                self._bucket.on_rate_limited(epoch, e.retry_after)
+                raise
+
+        return inner
+
+
+_token_bucket = AdaptiveTokenBucket()
+_token_bucket_limit = _TokenBucketDecorator(_token_bucket)
 _request_limit = AdaptiveRateLimit(TooManyRequests, 10)
-_concurrency_limit = ConcurrencyLimit(50)
+_concurrency_limit = ConcurrencyLimit(10)
 
 RequestId = NewType("RequestId", str)
 
@@ -68,6 +105,7 @@ class Client:
 
     @retry(10)
     @_request_limit
+    @_token_bucket_limit
     async def _get_item(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         if params is None:
             params = {}
@@ -106,6 +144,7 @@ class Client:
     @_concurrency_limit
     @retry(10)
     @_request_limit
+    @_token_bucket_limit
     async def _get_page(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         async with self._session.get(url, params=params, headers=self._authorization) as response:
             try:
@@ -119,6 +158,7 @@ class Client:
     @_concurrency_limit
     @retry(10)
     @_request_limit
+    @_token_bucket_limit
     async def post(
         self, endpoint: str, data: dict[str, Any], on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
     ) -> RequestId:
@@ -140,6 +180,7 @@ class Client:
     @_concurrency_limit
     @retry(10)
     @_request_limit
+    @_token_bucket_limit
     async def delete(
         self, endpoint: str, data: dict[str, Any] | None = None, on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
     ) -> RequestId:
@@ -173,13 +214,25 @@ async def _handle_potential_error(response: aiohttp.ClientResponse) -> None:
         return
 
     content = await response.json()
+    message = f"Status code: {response.status}. Message: {content['message']}"
 
-    error_dict = {404: NotFound, 429: TooManyRequests}
+    if response.status == 404:
+        raise NotFound(message)
+    if response.status == 429:
+        raise TooManyRequests(message, retry_after=_parse_retry_after(response))
 
-    if response.status in error_dict:
-        raise error_dict[response.status](f"Status code: {response.status}. Message: {content['message']}")
+    raise CodaError(message)
 
-    raise CodaError(f"Status code: {response.status}. Message: {content['message']}")
+
+def _parse_retry_after(response: aiohttp.ClientResponse) -> float | None:
+    """Parse the Retry-After header value as seconds, or None if absent/invalid."""
+    raw = response.headers.get("Retry-After")
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
 
 
 async def _handle_mutation_response(response: aiohttp.ClientResponse) -> RequestId:
