@@ -17,6 +17,19 @@ uv run ruff check src/ tests/           # Lint
 uv run ruff format --check src/ tests/  # Format check
 ```
 
+## Mandatory checks before completing any task
+
+You MUST run all of the following commands and ensure they pass with zero errors before considering any task complete:
+
+```bash
+uv run ruff format --check src/ tests/  # Formatting
+uv run ruff check src/ tests/           # Linting
+uv run pyright                          # Type checking (strict mode)
+uv run pytest                           # Tests
+```
+
+If any check fails, fix the issues and re-run until all four pass. Do not skip any of these checks.
+
 CLI usage:
 ```bash
 # Export all docs
