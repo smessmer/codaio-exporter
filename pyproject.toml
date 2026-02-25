@@ -13,7 +13,6 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "ensure>=1.0.3,<2",
     "aiohttp>=3.8.5,<4",
     "dataclasses-json>=0.6.0,<0.7",
     "rich>=13.5.2,<14",

@@ -179,7 +179,6 @@ dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
     { name = "dataclasses-json" },
-    { name = "ensure" },
     { name = "pyyaml" },
     { name = "rich" },
 ]
@@ -198,7 +197,6 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=23.2.1,<24" },
     { name = "aiohttp", specifier = ">=3.8.5,<4" },
     { name = "dataclasses-json", specifier = ">=0.6.0,<0.7" },
-    { name = "ensure", specifier = ">=1.0.3,<2" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
     { name = "rich", specifier = ">=13.5.2,<14" },
 ]
@@ -232,18 +230,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/64/a4/f71d9cf3a5ac257c993b5ca3f93df5f7fb395c725e7f1e6479d2514173c3/dataclasses_json-0.6.7.tar.gz", hash = "sha256:b6b3e528266ea45b9535223bc53ca645f5208833c29229e847b3f26a1cc55fc0", size = 32227, upload-time = "2024-06-09T16:20:19.103Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c3/be/d0d44e092656fe7a06b55e6103cbce807cdbdee17884a5367c68c9860853/dataclasses_json-0.6.7-py3-none-any.whl", hash = "sha256:0dbf33f26c8d5305befd61b39d2b3414e8a407bedc2834dea9b8d642666fb40a", size = 28686, upload-time = "2024-06-09T16:20:16.715Z" },
-]
-
-[[package]]
-name = "ensure"
-version = "1.0.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/14/b4/3c6b1c6af40fbd60bd1b2f0f8b55a8cbbc0993d4019a428b99e86f7bdee9/ensure-1.0.4.tar.gz", hash = "sha256:41b9093d591b5c25ee3c65c36da153b89abfcb7acb21ecebf21944704934f9b0", size = 21471, upload-time = "2023-12-10T03:32:42.788Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/34/076953d6007a5eeaa2fdd2f78c23bdf4ba1926f3cd334d59af34f354ecc6/ensure-1.0.4-py3-none-any.whl", hash = "sha256:ad88628482eac9bf91dd147ae677f26aeac6c65e1c91a161a0306dbd83f6efd9", size = 15564, upload-time = "2023-12-10T03:32:40.453Z" },
 ]
 
 [[package]]
@@ -858,15 +844,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/23/01/1c30526460f4d23222d0fabd5888868262fd0e2b71a00570ca26483cd993/ruff-0.15.2-py3-none-win32.whl", hash = "sha256:fd5ff9e5f519a7e1bd99cbe8daa324010a74f5e2ebc97c6242c08f26f3714f6f", size = 10507885, upload-time = "2026-02-19T22:32:15.635Z" },
     { url = "https://files.pythonhosted.org/packages/5c/10/3d18e3bbdf8fc50bbb4ac3cc45970aa5a9753c5cb51bf9ed9a3cd8b79fa3/ruff-0.15.2-py3-none-win_amd64.whl", hash = "sha256:d20014e3dfa400f3ff84830dfb5755ece2de45ab62ecea4af6b7262d0fb4f7c5", size = 11623725, upload-time = "2026-02-19T22:32:04.947Z" },
     { url = "https://files.pythonhosted.org/packages/6d/78/097c0798b1dab9f8affe73da9642bb4500e098cb27fd8dc9724816ac747b/ruff-0.15.2-py3-none-win_arm64.whl", hash = "sha256:cabddc5822acdc8f7b5527b36ceac55cc51eec7b1946e60181de8fe83ca8876e", size = 10941649, upload-time = "2026-02-19T22:32:18.108Z" },
-]
-
-[[package]]
-name = "six"
-version = "1.17.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
 
 [[package]]

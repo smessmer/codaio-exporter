@@ -1,29 +1,28 @@
-from typing import Any
-
-from ensure import check  # type: ignore[import-untyped]
+from typing import Any, cast
 
 
 def parse_int(v: Any) -> int:
-    check(v).is_a(int).or_raise(lambda _: Exception(f"Tried to read {v} as int"))  # pyright: ignore[reportUnknownMemberType, reportUnknownLambdaType]
-    assert isinstance(v, int)
+    if not isinstance(v, int):
+        raise Exception(f"Tried to read {v} as int")
     return v
 
 
 def parse_str(v: Any) -> str:
-    check(v).is_a(str).or_raise(lambda _: Exception(f"Tried to read {v} as str"))  # pyright: ignore[reportUnknownMemberType, reportUnknownLambdaType]
-    assert isinstance(v, str)
+    if not isinstance(v, str):
+        raise Exception(f"Tried to read {v} as str")
     return v
 
 
 def parse_bool(v: Any) -> bool:
-    check(v).is_a(bool).or_raise(lambda _: Exception(f"Tried to read {v} as bool"))  # pyright: ignore[reportUnknownMemberType, reportUnknownLambdaType]
-    assert isinstance(v, bool)
+    if not isinstance(v, bool):
+        raise Exception(f"Tried to read {v} as bool")
     return v
 
 
 def parse_dict_str_any(v: Any) -> dict[str, Any]:
-    check(v).is_a(dict).or_raise(lambda _: Exception(f"Tried to read {v} as Dict"))  # pyright: ignore[reportUnknownMemberType, reportUnknownLambdaType]
-    assert isinstance(v, dict)
-    for key in v:  # pyright: ignore[reportUnknownVariableType]
+    if not isinstance(v, dict):
+        raise Exception(f"Tried to read {v} as Dict")
+    d = cast(dict[str, Any], v)
+    for key in d:
         parse_str(key)
-    return v  # pyright: ignore[reportUnknownVariableType]
+    return d

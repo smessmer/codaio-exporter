@@ -95,7 +95,7 @@ async def _export_rows(table_path: str, table_api: TableAPI, columns: list[Colum
     table = parse_table_from_api(table_api.id(), table_api.name(), columns, rows)
     table_csv = table.to_csv()
     table_html = table.to_html()
-    table_json = table.to_json()  # pyright: ignore[reportUnknownMemberType]
+    table_json = table.to_json()
     table_data = json.loads(table_json)
     await gather_raise_first_error_after_all_tasks_complete(
         *(

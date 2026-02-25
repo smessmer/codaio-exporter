@@ -34,7 +34,8 @@ class ProgressBar:
 
 
 class ProgressDisplay:
-    def __init__(self, progress: Progress):  # pyright: ignore[reportMissingSuperCall]
+    def __init__(self, progress: Progress):
+        super().__init__()
         self._progress = progress
 
     def add_task(self, name: str, total: int | None = None) -> ProgressBar:
