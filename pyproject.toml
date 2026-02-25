@@ -15,8 +15,8 @@ classifiers = [
 dependencies = [
     "aiohttp>=3.8.5,<4",
     "dataclasses-json>=0.6.0,<0.7",
-    "rich>=13.5.2,<14",
-    "aiofiles>=23.2.1,<24",
+    "rich>=13.5.2,<15",
+    "aiofiles>=24.1.0,<26",
     "PyYAML>=6.0,<7",
 ]
 
@@ -25,9 +25,9 @@ codaio-exporter = "codaio_exporter.__main__:main"
 
 [dependency-groups]
 dev = [
-    "pytest>=7.4.2,<8",
+    "pytest>=8,<10",
     "pyright>=1.1.390,<2",
-    "types-aiofiles>=23.2.0.0,<24",
+    "types-aiofiles>=25.1.0.20251011,<26",
     "types-PyYAML>=6.0.12.11,<7",
     "ruff>=0.9,<1",
 ]
