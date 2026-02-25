@@ -4,7 +4,7 @@
 
 Async Python CLI tool that exports tables from Coda.io documents to local files (CSV, HTML, JSON, YAML) and can reimport previously exported tables back into Coda.io. Uses asyncio throughout with adaptive rate limiting, retries, and concurrency control.
 
-**Version:** 0.3.4 | **Python:** 3.10+ | **Package manager:** uv
+**Version:** 0.3.4 | **Python:** 3.11+ | **Package manager:** uv
 
 ## Quick reference
 
@@ -47,6 +47,7 @@ codaio-exporter --api-token <TOKEN> reimport --src-dir ./out --dest-doc-id <ID>
 ```
 src/codaio_exporter/
 ├── __main__.py              # Entry point, CLI arg parsing (argparse)
+├── errors.py                # Application-level exceptions (CodaExporterError hierarchy)
 ├── export.py                # Export orchestration, file writing
 ├── reimport.py              # Reimport orchestration, schema validation
 ├── table.py                 # Data models: Table, Row, Column (dataclasses-json)
@@ -64,8 +65,7 @@ src/codaio_exporter/
     ├── retry.py             # @retry decorator with exponential backoff
     ├── concurrencylimit.py  # ConcurrencyLimit decorator (semaphore)
     ├── gather.py            # Async gather variants (cancel-on-error, raise-first)
-    ├── generator.py         # collect(), concurrent_async_for()
-    └── async_app.py         # AsyncApp abstract base class
+    └── generator.py         # collect() to materialize async generators
 
 tests/
 └── test_codaio_exporter.py  # Test suite (pytest)
@@ -94,6 +94,7 @@ __main__.py  →  export.py / reimport.py  →  api/  →  utils/
 
 pyright strict mode is mandatory. Every function needs full type annotations. Key patterns:
 
+- `from __future__ import annotations` in every module
 - `@final` decorator on classes to prevent inheritance
 - `Final` annotation on immutable instance variables
 - `NoReturn` for error-exit functions
@@ -106,7 +107,7 @@ All I/O is async. Never use blocking calls.
 - File I/O: `aiofiles` with semaphore (512 concurrent max)
 - HTTP: `aiohttp` with concurrency limit (50 concurrent max)
 - Parallel work: `gather_raise_first_error_after_all_tasks_complete()` or `gather_cancel_on_first_error()`
-- Async iteration: `collect()` to materialize async generators, `concurrent_async_for()` for concurrent processing
+- Async iteration: `collect()` to materialize async generators
 
 ### Decorator stacking on API methods
 
@@ -129,10 +130,14 @@ Each Coda.io resource (Doc, Table, Column, Row) has a corresponding `*API` class
 
 ### Error handling
 
-Custom exception hierarchy rooted at `CodaError`:
-- `NotFound` (404), `TooManyRequests` (429), `ContentTypeError`, `StatusCodeError`, `ResponseFormatError`
+Two exception hierarchies:
 
-`TooManyRequests` triggers the adaptive rate limiter's backoff state.
+**API errors** (in `api/client.py`), rooted at `CodaError`:
+- `NotFound` (404), `TooManyRequests` (429), `ContentTypeError`, `StatusCodeError`, `ResponseFormatError`
+- `TooManyRequests` triggers the adaptive rate limiter's backoff state.
+
+**Application errors** (in `errors.py`), rooted at `CodaExporterError`:
+- `SchemaValidationError` (reimport schema mismatches), `DataFormatError` (malformed export data)
 
 ### Naming
 
