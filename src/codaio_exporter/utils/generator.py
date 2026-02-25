@@ -1,6 +1,7 @@
-import asyncio
-from collections.abc import AsyncGenerator, Callable, Coroutine
-from typing import Any, TypeVar
+from __future__ import annotations
+
+from collections.abc import AsyncGenerator, Callable
+from typing import TypeVar
 
 T = TypeVar("T")
 
@@ -13,12 +14,3 @@ async def collect(generator: AsyncGenerator[T, None], per_item_callback: Callabl
         if per_item_callback is not None:
             per_item_callback()
     return result
-
-
-# `async for` isn't concurrent and does one iteration strictly after the other. This function allows us
-# to process multiple loop iterations concurrently.
-async def concurrent_async_for(generator: AsyncGenerator[T, None], loop_body: Callable[[T], Coroutine[Any, Any, None]]) -> None:
-    tasks: list[asyncio.Task[None]] = []
-    async for item in generator:
-        tasks.append(asyncio.create_task(loop_body(item)))
-    await asyncio.gather(*tasks)

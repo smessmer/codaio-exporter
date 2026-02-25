@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator, Callable
 from enum import Enum
 from typing import Any, Final, final

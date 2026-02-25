@@ -171,7 +171,6 @@ Custom exception hierarchy rooted at `CodaError`:
 | dataclasses-json | JSON/dataclass serialization (`DataClassJsonMixin`) |
 | rich | Terminal progress bars |
 | aiofiles | Async file I/O |
-| ensure | Runtime type assertions in `parse.py` |
 | PyYAML | YAML output format |
 
 Dev (via dependency group): `pytest`, `pyright`, `ruff`, `types-aiofiles`, `types-PyYAML`

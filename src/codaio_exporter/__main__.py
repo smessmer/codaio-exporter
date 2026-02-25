@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import asyncio
 import logging
@@ -13,7 +15,7 @@ async def async_main() -> None:
     # above the progress bars and doesn't interfere with them
     with with_progress_display() as progress_display:
         logging.getLogger("backoff").addHandler(logging.StreamHandler())
-        logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.WARN)
+        logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.WARNING)
 
         parser = argparse.ArgumentParser(description="Export tables from coda.io")
         parser.add_argument("--api-token", type=str)

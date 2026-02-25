@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # from codaio_exporter import __version__
 
 

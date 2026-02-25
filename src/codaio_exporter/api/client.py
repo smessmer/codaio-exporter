@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from collections.abc import AsyncGenerator, Callable
@@ -13,7 +15,7 @@ from codaio_exporter.utils.retry import retry
 
 
 @asynccontextmanager
-async def make_client(api_token: str) -> AsyncGenerator["Client", None]:
+async def make_client(api_token: str) -> AsyncGenerator[Client, None]:
     async with aiohttp.ClientSession() as session:
         yield Client(session, api_token)
 

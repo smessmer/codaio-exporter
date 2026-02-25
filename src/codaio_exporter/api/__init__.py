@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -6,7 +8,7 @@ from codaio_exporter.api.doc import DocAPI
 
 
 @asynccontextmanager
-async def make_api(api_token: str) -> AsyncGenerator["API", None]:
+async def make_api(api_token: str) -> AsyncGenerator[API, None]:
     async with make_client(api_token) as client:
         yield API(client)
 

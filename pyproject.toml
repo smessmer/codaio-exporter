@@ -3,10 +3,9 @@ name = "codaio-exporter"
 version = "0.3.4"
 description = ""
 authors = [{ name = "Sebastian Messmer", email = "mail@smessmer.de" }]
-requires-python = ">=3.10,<4"
+requires-python = ">=3.11,<4"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -34,7 +33,7 @@ dev = [
 
 [tool.pyright]
 include = ["src/codaio_exporter", "tests"]
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportUnnecessaryTypeIgnoreComment = true
 reportCallInDefaultInitializer = true
@@ -51,7 +50,7 @@ requires = ["uv_build>=0.10.2,<0.11.0"]
 build-backend = "uv_build"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 150
 
 [tool.ruff.lint]
@@ -60,7 +59,7 @@ select = [
     "W",      # pycodestyle warnings
     "F",      # Pyflakes
     "I",      # isort (import sorting)
-    "UP",     # pyupgrade (modernize syntax for py310+)
+    "UP",     # pyupgrade (modernize syntax for py311+)
     "B",      # flake8-bugbear (common bug patterns)
     "SIM",    # flake8-simplify
     "RUF",    # Ruff-specific rules

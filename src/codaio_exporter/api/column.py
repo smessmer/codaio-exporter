@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Final, final
 
 from codaio_exporter.api.parse import parse_bool, parse_str

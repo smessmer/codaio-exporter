@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import html
 from dataclasses import dataclass
@@ -8,6 +10,7 @@ from dataclasses_json import DataClassJsonMixin
 
 from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.row import RowAPI
+from codaio_exporter.errors import DataFormatError
 
 
 @final
@@ -76,7 +79,7 @@ def _parse_column(column: ColumnAPI) -> Column:
 
 def _parse_row(columns: list[Column], row: RowAPI) -> Row:
     if row.num_cells() != len(columns):
-        raise Exception(f"_Row {row.id()} has wrong number of cells. Expected {len(columns)} columns but found {row.num_cells()}")
+        raise DataFormatError(f"_Row {row.id()} has wrong number of cells. Expected {len(columns)} columns but found {row.num_cells()}")
     cells = [row.get_cell_value(column.id) for column in columns]
     return Row(
         id=row.id(),

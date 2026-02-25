@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import asyncio
-import os
+from pathlib import Path
 from typing import final
 
 import aiofiles
@@ -7,6 +9,7 @@ import aiofiles
 from codaio_exporter.api import make_api
 from codaio_exporter.api.doc import DocAPI
 from codaio_exporter.api.table import TableAPI, TableType
+from codaio_exporter.errors import DataFormatError, SchemaValidationError
 from codaio_exporter.progress import ProgressDisplay
 from codaio_exporter.table import Row, Table
 from codaio_exporter.utils.gather import gather_cancel_on_first_error
@@ -72,12 +75,12 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
         doc = await api.get_doc(dest_doc_id)
 
         print("Reading tables from export...")
-        tables_path = os.path.join(source_path, "tables/table")
-        table_dirs = os.listdir(tables_path)
+        tables_path = Path(source_path) / "tables" / "table"
+        table_dirs = [p.name for p in tables_path.iterdir() if p.is_dir()]
         progress_handler = ProgressHandler(len(table_dirs), progress_display)
 
         tables = await gather_cancel_on_first_error(
-            *(_load_table(os.path.join(tables_path, table_dir, "table.json"), progress_handler) for table_dir in table_dirs)
+            *(_load_table(tables_path / table_dir / "table.json", progress_handler) for table_dir in table_dirs)
         )
         print("Reading tables from export...done")
 
@@ -89,7 +92,7 @@ async def reimport_doc(api_token: str, source_path: str, dest_doc_id: str, progr
         print("Importing tables to coda.io...done")
 
 
-async def _load_table(path: str, progress_handler: ProgressHandler) -> Table:
+async def _load_table(path: Path, progress_handler: ProgressHandler) -> Table:
     json = await _read_file(path)
     result = Table.from_json(json)
     progress_handler.increment_load_export()
@@ -106,11 +109,11 @@ async def _load_table_api_and_check_schema(doc: DocAPI, table: Table, progress_h
 
 async def _check_table_is_compatible(table_api: TableAPI, table: Table) -> None:
     if table_api.name() != table.name:
-        raise Exception(
+        raise SchemaValidationError(
             f"Table {table.id}: Export states table name is {table.name} but server thinks it is {table_api.name}. Aborting this reimport just to be safe."
         )
     if table_api.type() != TableType.table:
-        raise Exception(f"Table {table.name} {table.id}: Server type is {table_api.type()} but expected it to be 'table'")
+        raise SchemaValidationError(f"Table {table.name} {table.id}: Server type is {table_api.type()} but expected it to be 'table'")
 
     await _check_columns_are_compatible(table_api, table)
 
@@ -120,18 +123,18 @@ async def _check_columns_are_compatible(server_side_table: TableAPI, table: Tabl
     columns_api_by_id = {column.id(): column for column in columns_api}
     for column in table.columns:
         if column.id not in columns_api_by_id:
-            raise Exception(f"Table {table.name} {table.id}: Column {column.name} {column.id} found in export but not on server")
+            raise SchemaValidationError(f"Table {table.name} {table.id}: Column {column.name} {column.id} found in export but not on server")
         server_column = columns_api_by_id[column.id]
         if column.name != server_column.name():
-            raise Exception(
+            raise SchemaValidationError(
                 f"Table {table.name} {table.id}: Column {column.id}: Export states column name is {column.name} but server thinks it is {server_side_table.name}. Aborting this reimport just to be safe."
             )
         if (not column.calculated) and server_column.calculated():
-            raise Exception(
+            raise SchemaValidationError(
                 f"Table {table.name} {table.id}: Column {column.name} {column.id}: Export states column is a manual column but server states it is a calculated column"
             )
         if column.calculated and not server_column.calculated():
-            raise Exception(
+            raise SchemaValidationError(
                 f"Table {table.name} {table.id}: Column {column.name} {column.id}: Export states column is a calculated column but server states it is a manual column"
             )
 
@@ -152,13 +155,13 @@ async def _delete_all_rows(table_api: TableAPI, progress_handler: ProgressHandle
 async def _insert_rows(table_api: TableAPI, table: Table, progress_handler: ProgressHandler) -> None:
     def format_row(row: Row) -> dict[str, str]:
         if len(table.columns) != len(row.cells):
-            raise Exception(
+            raise DataFormatError(
                 f"Table {table.name} {table.id}: Export has {len(table.columns)} columns but a row in the export has {len(row.cells)} columns"
             )
         result: dict[str, str] = {}
-        for i in range(len(row.cells)):
-            if table.columns[i].formula is None:
-                result[table.columns[i].id] = row.cells[i]
+        for column, cell in zip(table.columns, row.cells, strict=True):
+            if column.formula is None:
+                result[column.id] = cell
         return result
 
     cells = [format_row(row) for row in table.rows]
@@ -170,6 +173,6 @@ async def _insert_rows(table_api: TableAPI, table: Table, progress_handler: Prog
 read_semaphore = asyncio.Semaphore(512)
 
 
-async def _read_file(path: str) -> str:
+async def _read_file(path: Path) -> str:
     async with read_semaphore, aiofiles.open(path) as file:
         return await file.read()

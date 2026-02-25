@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from asyncio import Semaphore
 from collections.abc import Awaitable, Callable
 from functools import wraps
