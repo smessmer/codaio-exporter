@@ -39,6 +39,11 @@ class ProgressDisplay:
     def __init__(self, progress: Progress):
         super().__init__()
         self._progress = progress
+        if progress.console.options.ascii_only:
+            # The output encoding isn't UTF (e.g. it is latin-1). rich then draws its bars in ASCII, but not the Braille dots of its default spinner.
+            for column in progress.columns:
+                if isinstance(column, SpinnerColumn):
+                    column.set_spinner("line")
 
     def add_task(self, name: str, total: int | None = None) -> ProgressBar:
         return ProgressBar(self._progress, name, total=total)
