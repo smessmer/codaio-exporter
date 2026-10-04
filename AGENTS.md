@@ -122,7 +122,7 @@ API methods compose three decorators in this order:
 
 ```python
 @_concurrency_limit   # Outermost: limits total concurrent calls
-@retry(10)            # Middle: retries on any exception
+@retry(10)            # Middle: retries on any Exception (cancellation propagates)
 @_request_limit       # Innermost: adaptive rate limiting
 async def _get_page(self, ...): ...
 ```

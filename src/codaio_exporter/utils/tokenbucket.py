@@ -87,7 +87,7 @@ class AdaptiveTokenBucket:
     Used as the innermost decorator on HTTP client methods:
 
         @_concurrency_limit    # outermost: bounds concurrent tasks
-        @retry(10)             # 2nd: retries on any exception
+        @retry(10)             # 2nd: retries on any Exception (cancellation propagates)
         @_request_limit        # 3rd: reactive backoff (blocks all on 429)
         @_token_bucket_limit   # innermost: proactive metering
 

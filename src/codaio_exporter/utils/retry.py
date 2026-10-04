@@ -13,6 +13,8 @@ R = TypeVar("R")
 
 
 ## Function decorator that retries on exceptions, at most `max_num_retries` retries, i.e. `max_num_retries + 1` calls
+## Only `Exception`s are retried. Other `BaseException`s (e.g. `asyncio.CancelledError`, `KeyboardInterrupt`) propagate
+## immediately, so that cancelling a task or interrupting the program isn't delayed or ignored.
 def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         @wraps(func)
@@ -21,7 +23,7 @@ def retry(max_num_retries: int) -> Callable[[Callable[P, Awaitable[R]]], Callabl
             while True:
                 try:
                     return await func(*args, **kwds)
-                except BaseException:
+                except Exception:
                     remaining_retries -= 1
                     if remaining_retries < 0:
                         raise
