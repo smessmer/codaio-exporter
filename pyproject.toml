@@ -29,7 +29,7 @@ dev = [
     "pyright>=1.1.390,<2",
     "types-aiofiles>=25.1.0.20251011,<26",
     "types-PyYAML>=6.0.12.11,<7",
-    "ruff>=0.9,<1",
+    "ruff>=0.16,<0.17",
 ]
 
 [tool.pyright]
