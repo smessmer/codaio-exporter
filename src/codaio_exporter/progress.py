@@ -4,6 +4,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Final, final
 
+from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeRemainingColumn
 
 
@@ -45,13 +46,15 @@ class ProgressDisplay:
 
 
 @contextmanager
-def with_progress_display() -> Generator[ProgressDisplay, None, None]:
+def with_progress_display(*, console: Console | None = None) -> Generator[ProgressDisplay, None, None]:
     with Progress(
         SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
+        # Task names can be user data (e.g. coda.io doc names), so show them literally instead of parsing rich markup and emoji codes
+        TextColumn("{task.description}", style="progress.description", markup=False),
         BarColumn(),
         MofNCompleteColumn(),
         TaskProgressColumn(),
         TimeRemainingColumn(),
+        console=console,
     ) as progress:
         yield ProgressDisplay(progress)
