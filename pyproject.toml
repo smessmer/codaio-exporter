@@ -1,6 +1,6 @@
 [project]
 name = "codaio-exporter"
-version = "0.4.0"
+version = "0.4.1"
 description = ""
 authors = [{ name = "Sebastian Messmer", email = "mail@smessmer.de" }]
 requires-python = ">=3.11,<4"
