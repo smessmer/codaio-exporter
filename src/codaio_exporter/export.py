@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
+import unicodedata
 from pathlib import Path
 from typing import Any, final
 
@@ -135,7 +137,28 @@ def _row_name_for_path(row: Row, num_rows: int) -> str:
 
 
 def _remove_path_unsafe_characters(name: str) -> str:
-    return name.replace("/", "_")
+    name = name.replace("/", "_")
+    # On Linux and macOS, Python encodes file names with the file system encoding, which is e.g. latin-1 or ascii instead of UTF-8 with a
+    # legacy locale. Creating a file or directory whose name has a character that the encoding can't represent fails with UnicodeEncodeError.
+    encoding = sys.getfilesystemencoding()
+    errors = sys.getfilesystemencodeerrors()
+    if _can_encode(name, encoding, errors):
+        return name
+    # e.g. "e" and a combining acute accent (NFD), which latin-1 can only encode as the single character "é" (NFC)
+    composed_name = unicodedata.normalize("NFC", name)
+    if _can_encode(composed_name, encoding, errors):
+        return composed_name
+    # Per character of the original name, not of the NFC form: NFC can replace a character that the encoding can represent with one that it
+    # can't, e.g. U+F92C (a Korean hanja that EUC-KR can encode) with U+90CE (which it can't).
+    return "".join(char if _can_encode(char, encoding, errors) else "_" for char in name)
+
+
+def _can_encode(text: str, encoding: str, errors: str) -> bool:
+    try:
+        text.encode(encoding, errors)
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def _format_index(index: int, max_index: int) -> str:
