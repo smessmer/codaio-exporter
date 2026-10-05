@@ -157,6 +157,7 @@ Two exception hierarchies:
 ### File path safety
 
 - `/` in names replaced with `_`
+- Characters the file system encoding can't represent (e.g. `☕` with a latin-1 or ASCII locale) replaced with `_`, unless the name's NFC form can be encoded as a whole
 - Row names > 100 chars become `ROWNAME_TOO_LONG`
 - Indices zero-filled for filesystem sort order
 - Docs without folders use `NO_FOLDER_NAME`
