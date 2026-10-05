@@ -110,7 +110,7 @@ async def _load_table_api_and_check_schema(doc: DocAPI, table: Table, progress_h
 async def _check_table_is_compatible(table_api: TableAPI, table: Table) -> None:
     if table_api.name() != table.name:
         raise SchemaValidationError(
-            f"Table {table.id}: Export states table name is {table.name} but server thinks it is {table_api.name}. Aborting this reimport just to be safe."
+            f"Table {table.id}: Export states table name is {table.name} but server thinks it is {table_api.name()}. Aborting this reimport just to be safe."
         )
     if table_api.type() != TableType.table:
         raise SchemaValidationError(f"Table {table.name} {table.id}: Server type is {table_api.type()} but expected it to be 'table'")
@@ -127,7 +127,7 @@ async def _check_columns_are_compatible(server_side_table: TableAPI, table: Tabl
         server_column = columns_api_by_id[column.id]
         if column.name != server_column.name():
             raise SchemaValidationError(
-                f"Table {table.name} {table.id}: Column {column.id}: Export states column name is {column.name} but server thinks it is {server_side_table.name}. Aborting this reimport just to be safe."
+                f"Table {table.name} {table.id}: Column {column.id}: Export states column name is {column.name} but server thinks it is {server_column.name()}. Aborting this reimport just to be safe."
             )
         if (not column.calculated) and server_column.calculated():
             raise SchemaValidationError(

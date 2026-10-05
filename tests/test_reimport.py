@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from codaio_exporter.api.column import ColumnAPI
-from codaio_exporter.api.table import TableType
+from codaio_exporter.api.table import TableAPI, TableType
 from codaio_exporter.errors import DataFormatError, SchemaValidationError
 from codaio_exporter.reimport import (
     _check_columns_are_compatible,  # pyright: ignore[reportPrivateUsage]
@@ -13,7 +14,7 @@ from codaio_exporter.reimport import (
     _insert_rows,  # pyright: ignore[reportPrivateUsage]
 )
 
-from .conftest import async_generator_from_list, make_column, make_column_api_data, make_row, make_table
+from .conftest import async_generator_from_list, make_column, make_column_api_data, make_mock_client, make_row, make_table, make_table_api_data
 
 
 def _make_mock_table_api(
@@ -63,6 +64,15 @@ async def test_check_table_name_mismatch() -> None:
         await _check_table_is_compatible(table_api, table)
 
 
+async def test_check_table_name_mismatch_message_shows_server_name() -> None:
+    table_api = TableAPI(make_mock_client(), "/docs/d-1", make_table_api_data(name="Server Table"))
+    table = make_table(name="Export Table")
+
+    with pytest.raises(SchemaValidationError, match=re.escape("table name is Export Table but server thinks it is Server Table.")) as exc_info:
+        await _check_table_is_compatible(table_api, table)
+    assert "bound method" not in str(exc_info.value)
+
+
 async def test_check_table_type_not_table() -> None:
     table_api = _make_mock_table_api(name="My Table", table_type=TableType.view)
     table = make_table(name="My Table")
@@ -103,6 +113,18 @@ async def test_check_columns_name_mismatch() -> None:
 
     with pytest.raises(SchemaValidationError, match="Export states column name"):
         await _check_columns_are_compatible(table_api, table)
+
+
+async def test_check_columns_name_mismatch_message_shows_server_name() -> None:
+    # Table and column names all differ, so the assertion can tell which object's name ended up in the message.
+    client = make_mock_client()
+    client.get_list.return_value = async_generator_from_list([make_column_api_data(id="c1", name="Server Column")])
+    table_api = TableAPI(client, "/docs/d-1", make_table_api_data(name="Server Table"))
+    table = make_table(name="Export Table", columns=[make_column(id="c1", name="Export Column")])
+
+    with pytest.raises(SchemaValidationError, match=re.escape("column name is Export Column but server thinks it is Server Column.")) as exc_info:
+        await _check_columns_are_compatible(table_api, table)
+    assert "bound method" not in str(exc_info.value)
 
 
 async def test_check_columns_manual_to_calculated_mismatch() -> None:
