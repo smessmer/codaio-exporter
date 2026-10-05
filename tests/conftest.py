@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+import textwrap
 from collections.abc import AsyncGenerator
-from typing import Any
+from pathlib import Path
+from typing import Any, Final
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from codaio_exporter.api.client import Client
 from codaio_exporter.table import Column, Row, Table
@@ -98,3 +105,34 @@ def make_mock_client() -> MagicMock:
     client.post = AsyncMock()
     client.delete = AsyncMock()
     return client
+
+
+# Fails if open() wouldn't use ASCII in the new interpreter after all, so that tests can't pass without testing anything
+_CHECK_ASCII_LOCALE: Final = """
+import codecs, locale, sys
+assert not sys.flags.utf8_mode, "UTF-8 mode is on, so open() would use UTF-8 instead of ASCII"
+assert codecs.lookup(locale.getencoding()).name == "ascii", "open() would use " + locale.getencoding() + " instead of ASCII"
+"""
+
+
+def run_python_with_ascii_locale(code: str, cwd: Path) -> str:
+    """Runs the Python code in a new interpreter in the C locale without UTF-8 mode, in the working directory cwd. There, open()
+    reads and writes text files as ASCII unless it gets an explicit encoding. (Patching the locale module doesn't change the encoding
+    that open() uses, so this needs a new interpreter.) The interpreter decodes its command line as ASCII as well, so the code must be
+    ASCII: embed strings with the !a conversion, e.g. f"{text!a}". It also can't open a path with non-ASCII characters given as a
+    string, so refer to files by their paths relative to cwd, whose own path may have any characters. Returns what the code printed."""
+    if sys.platform == "win32":
+        pytest.skip("LC_ALL doesn't change the encoding that open() uses on Windows")
+    if not all(path.isascii() for path in sys.path):
+        # e.g. the new interpreter reads .pth files as ASCII, so with a non-ASCII path of an editable install of codaio_exporter, Python
+        # 3.11 exits at startup and newer versions skip the path. Python 3.12+ also can't load extension modules from non-ASCII paths.
+        pytest.skip("The new interpreter can't import from the non-ASCII paths in sys.path")
+    result = subprocess.run(
+        [sys.executable, "-c", _CHECK_ASCII_LOCALE + textwrap.dedent(code)],
+        cwd=cwd,
+        env={**os.environ, "LC_ALL": "C", "PYTHONUTF8": "0"},
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    return result.stdout.decode("ascii")

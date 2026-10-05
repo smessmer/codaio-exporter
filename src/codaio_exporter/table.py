@@ -53,7 +53,9 @@ class Table(DataClassJsonMixin):
         rows = ["".join([f"<td>{html.escape(str(cell))}</td>" for cell in row.cells]) for row in self.rows]
         rows_html = "".join(f"<tr>{row}</tr>" for row in rows)
         table_html = f"<table><thead><tr>{column_headers_html}</tr></thead><tbody>{rows_html}</tbody></table>"
-        return f"<html><head/><body>{table_html}</body></html>"
+        # Export writes the file as UTF-8. Without the declaration, browsers may decode it with a legacy encoding (e.g. windows-1252).
+        # The "/" keeps the file well-formed XML.
+        return f'<html><head><meta charset="utf-8"/></head><body>{table_html}</body></html>'
 
 
 def parse_table_from_api(table_id: str, table_name: str, columns: list[ColumnAPI], rows: list[RowAPI]) -> Table:

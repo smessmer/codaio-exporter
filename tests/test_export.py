@@ -14,7 +14,7 @@ from codaio_exporter.export import (
     _table_path,  # pyright: ignore[reportPrivateUsage]
 )
 
-from .conftest import make_column_api_data, make_row
+from .conftest import make_column_api_data, make_row, run_python_with_ascii_locale
 
 # --- _remove_path_unsafe_characters ---
 
@@ -48,6 +48,26 @@ def test_format_index_max_value() -> None:
 
 def test_format_index_zero() -> None:
     assert _format_index(0, 9) == "0"
+
+
+# --- _write_file ---
+
+
+def test_write_file_writes_utf8_with_ascii_locale(tmp_path: Path) -> None:
+    # e.g. cell values in table.csv, which the encoding of the locale can't represent
+    text = "Grüße ☕ 5 € 日本語 😀"
+
+    run_python_with_ascii_locale(
+        f"""
+        import asyncio
+        from pathlib import Path
+        from codaio_exporter.export import _write_file
+        asyncio.run(_write_file(Path("table.csv"), {text!a}))
+        """,
+        cwd=tmp_path,
+    )
+
+    assert (tmp_path / "table.csv").read_bytes() == text.encode("utf-8")
 
 
 # --- _row_name_for_path ---
