@@ -4,7 +4,7 @@
 
 Async Python CLI tool that exports tables from Coda.io documents to local files (CSV, HTML, JSON, YAML) and can reimport previously exported tables back into Coda.io. Uses asyncio throughout with adaptive rate limiting, retries, and concurrency control.
 
-**Version:** 0.3.4 | **Python:** 3.11+ | **Package manager:** uv
+**Version:** 0.4.1 | **Python:** 3.11+ | **Package manager:** uv
 
 ## Quick reference
 
