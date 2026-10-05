@@ -12,11 +12,11 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "aiohttp>=3.8.5,<4",
+    "aiohttp>=3.14.3,<4",
     "dataclasses-json>=0.6.0,<0.7",
     "rich>=13.5.2,<16",
     "aiofiles>=24.1.0,<26",
-    "PyYAML>=6.0,<7",
+    "PyYAML>=6.0.1,<7",
 ]
 
 [project.scripts]
