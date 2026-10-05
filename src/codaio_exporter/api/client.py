@@ -155,13 +155,30 @@ class Client:
                 raise ContentTypeError(f"Content type error for {content_text}", e) from e
             return parse_dict_str_any(content)
 
+    # A mutation is sent by _post() or _delete(), which are retried and rate limited. post() and delete() then wait for its
+    # completion outside of them, in _wait_until_mutation_is_completed():
+    # - The mutation status requests go through the same rate limiter. After a 429, the rate limiter lets one request through to
+    #   probe whether the rate limit is over. If that request waited for the mutation to complete, the status requests would wait
+    #   for it forever.
+    # - If waiting fails, it is retried on its own. Sending the mutation again would apply it twice: the server already accepted it.
+    # - post() and delete() keep their concurrency slot while waiting, so the status requests must not need another slot. Otherwise
+    #   mutations holding all slots would wait for each other forever.
     @_concurrency_limit
-    @retry(10)
-    @_request_limit
-    @_token_bucket_limit
     async def post(
         self, endpoint: str, data: dict[str, Any], on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
     ) -> RequestId:
+        request_id = await self._post(endpoint, data)
+        if on_issued is not None:
+            on_issued()
+        if wait_for_completion:
+            await self._wait_until_mutation_is_completed(request_id)
+            logging.info(f"POST {endpoint}: completed")
+        return request_id
+
+    @retry(10)
+    @_request_limit
+    @_token_bucket_limit
+    async def _post(self, endpoint: str, data: dict[str, Any]) -> RequestId:
         logging.info(f"POST {endpoint}")
         async with self._session.post(
             _API_ENDPOINT + endpoint,
@@ -170,32 +187,31 @@ class Client:
         ) as response:
             request_id = await _handle_mutation_response(response)
             logging.info(f"POST {endpoint}: responded")
-            if on_issued is not None:
-                on_issued()
-            if wait_for_completion:
-                await self._wait_until_mutation_is_completed(request_id)
-                logging.info(f"POST {endpoint}: completed")
             return request_id
 
     @_concurrency_limit
-    @retry(10)
-    @_request_limit
-    @_token_bucket_limit
     async def delete(
         self, endpoint: str, data: dict[str, Any] | None = None, on_issued: Callable[[], None] | None = None, wait_for_completion: bool = True
     ) -> RequestId:
         if data is None:
             data = {}
+        request_id = await self._delete(endpoint, data)
+        if on_issued is not None:
+            on_issued()
+        if wait_for_completion:
+            await self._wait_until_mutation_is_completed(request_id)
+            logging.info(f"DELETE {endpoint}: completed")
+        return request_id
+
+    @retry(10)
+    @_request_limit
+    @_token_bucket_limit
+    async def _delete(self, endpoint: str, data: dict[str, Any]) -> RequestId:
         logging.info(f"DELETE {endpoint} {data!s}")
 
         async with self._session.delete(_API_ENDPOINT + endpoint, json=data, headers=self._authorization) as response:
             request_id = await _handle_mutation_response(response)
             logging.info(f"DELETE {endpoint}: responded")
-            if on_issued is not None:
-                on_issued()
-            if wait_for_completion:
-                await self._wait_until_mutation_is_completed(request_id)
-                logging.info(f"DELETE {endpoint}: completed")
             return request_id
 
     async def _get_mutation_is_completed(self, request_id: RequestId) -> bool:
@@ -204,6 +220,9 @@ class Client:
             raise ResponseFormatError(f"Expected 'completed' to be in response but response was {response}")
         return parse_bool(response["completed"])
 
+    # Each status request is already retried by _get_item(). Retrying the whole wait as well lets a mutation outlast a longer outage
+    # of the status endpoint without being sent again (see the comment above post()).
+    @retry(10)
     async def _wait_until_mutation_is_completed(self, request_id: RequestId) -> None:
         while not await self._get_mutation_is_completed(request_id):
             await asyncio.sleep(1)
