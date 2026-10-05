@@ -116,21 +116,33 @@ class AdaptiveRateLimit:
                     if isinstance(retry_after, int | float) and retry_after > 0:
                         backoff_secs = max(float(retry_after), 1.0)
                     self._backoff_until = ceil(time.monotonic() + backoff_secs)
-                except:
+                except Exception:
                     # An unrelated error happened
                     if is_backoff:
                         # But we're the task responsible for recovering from _State.recovery
                         logging.debug(
                             f"Request {request_index}: Attempting another request after backoff...failed with error unrelated to rate limit. Waking a different request."
                         )
-                        # Sleep for a bit in case the server has temporary issues
-                        await asyncio.sleep(1)
-                        # Setting the state back to _State.backoff but without a timeout.
-                        # This will cause one (and only one) of the backoff threads to wake up
-                        # and go into _State.recover
-                        self._state = _State.backoff
+                        try:
+                            # Sleep for a bit in case the server has temporary issues
+                            await asyncio.sleep(1)
+                        finally:
+                            # Setting the state back to _State.backoff but without a timeout.
+                            # This will cause one (and only one) of the backoff threads to wake up
+                            # and go into _State.recover.
+                            # This also needs to happen if the sleep is interrupted (e.g. the task gets cancelled),
+                            # otherwise we'd stay in _State.recover forever and all other requests would wait forever.
+                            self._state = _State.backoff
                         # Sleep a bit more to make sure it's not ourselves but a different task that gets woken up
                         await asyncio.sleep(10)
+                    raise
+                except BaseException:
+                    # The request was cancelled (asyncio.CancelledError) or the program is being interrupted (e.g. KeyboardInterrupt).
+                    # Don't delay that with the sleeps above, but if we're the task responsible for recovering from _State.recover,
+                    # hand that over to a different request right away.
+                    if is_backoff:
+                        logging.debug(f"Request {request_index}: Attempting another request after backoff...interrupted. Waking a different request.")
+                        self._state = _State.backoff
                     raise
 
         return inner
