@@ -174,5 +174,7 @@ read_semaphore = asyncio.Semaphore(512)
 
 
 async def _read_file(path: Path) -> str:
-    async with read_semaphore, aiofiles.open(path) as file:
+    # Export writes its files as UTF-8, whatever the encoding of the locale. "utf-8-sig" also accepts files that start with a byte
+    # order mark, which some editors write when saving UTF-8.
+    async with read_semaphore, aiofiles.open(path, encoding="utf-8-sig") as file:
         return await file.read()

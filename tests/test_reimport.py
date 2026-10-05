@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import codecs
 import re
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -8,13 +10,25 @@ import pytest
 from codaio_exporter.api.column import ColumnAPI
 from codaio_exporter.api.table import TableAPI, TableType
 from codaio_exporter.errors import DataFormatError, SchemaValidationError
+from codaio_exporter.export import _write_file  # pyright: ignore[reportPrivateUsage]
 from codaio_exporter.reimport import (
+    ProgressHandler,
     _check_columns_are_compatible,  # pyright: ignore[reportPrivateUsage]
     _check_table_is_compatible,  # pyright: ignore[reportPrivateUsage]
     _insert_rows,  # pyright: ignore[reportPrivateUsage]
+    _load_table,  # pyright: ignore[reportPrivateUsage]
 )
 
-from .conftest import async_generator_from_list, make_column, make_column_api_data, make_mock_client, make_row, make_table, make_table_api_data
+from .conftest import (
+    async_generator_from_list,
+    make_column,
+    make_column_api_data,
+    make_mock_client,
+    make_row,
+    make_table,
+    make_table_api_data,
+    run_python_with_ascii_locale,
+)
 
 
 def _make_mock_table_api(
@@ -180,3 +194,36 @@ async def test_insert_rows_wrong_column_count_raises() -> None:
 
     with pytest.raises(DataFormatError, match="columns but a row"):
         await _insert_rows(table_api, table, progress)
+
+
+# --- _read_file ---
+
+
+async def test_read_file_reads_exported_file_with_ascii_locale(tmp_path: Path) -> None:
+    # The export may have run with a different locale, e.g. on a different system
+    text = '{"cells": ["Grüße ☕ 5 € 日本語 😀"]}'
+    await _write_file(tmp_path / "table.json", text)
+
+    output = run_python_with_ascii_locale(
+        """
+        import asyncio
+        from pathlib import Path
+        from codaio_exporter.reimport import _read_file
+        print(ascii(asyncio.run(_read_file(Path("table.json")))))
+        """,
+        cwd=tmp_path,
+    )
+
+    assert output.strip() == ascii(text)
+
+
+# --- _load_table ---
+
+
+async def test_load_table_reads_table_json_with_byte_order_mark(tmp_path: Path) -> None:
+    # Some editors write a byte order mark at the start of UTF-8 files, e.g. when saving table.json after editing it
+    table = make_table(columns=[make_column(name="Größe")], rows=[make_row(cells=["☕"])])
+    path = tmp_path / "table.json"
+    path.write_bytes(codecs.BOM_UTF8 + table.to_json(ensure_ascii=False).encode("utf-8"))
+
+    assert await _load_table(path, ProgressHandler(1, None)) == table

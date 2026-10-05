@@ -148,7 +148,9 @@ write_semaphore = asyncio.Semaphore(512)
 
 
 async def _write_file(path: Path, content: str) -> None:
-    async with write_semaphore, aiofiles.open(path, "w") as file:
+    # Always UTF-8. Without an explicit encoding, open() uses the encoding of the locale, which may not be able to represent all
+    # characters of the tables (e.g. if it is latin-1 or ASCII), and the encoding of the files would depend on the system.
+    async with write_semaphore, aiofiles.open(path, "w", encoding="utf-8") as file:
         await file.write(content)
 
 

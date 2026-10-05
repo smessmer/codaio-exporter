@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from xml.etree import ElementTree
+
 import pytest
 
 from codaio_exporter.api.column import ColumnAPI
@@ -115,6 +117,22 @@ def test_table_to_html_basic_structure() -> None:
     assert "<thead>" in html
     assert "<tbody>" in html
     assert "<td>val1</td>" in html
+
+
+def test_table_to_html_declares_utf8_charset() -> None:
+    # Export writes table.html as UTF-8
+    col = make_column(id="c1", name="Größe")
+    row = make_row(cells=["☕"])
+    table = make_table(columns=[col], rows=[row])
+
+    html = table.to_html()
+    assert html.startswith('<html><head><meta charset="utf-8"/></head><body>')
+    assert '<th title="no formula">Größe</th>' in html
+    assert "<td>☕</td>" in html
+    # Still well-formed XML, as without the declaration
+    meta = ElementTree.fromstring(html).find("head/meta")
+    assert meta is not None
+    assert meta.attrib == {"charset": "utf-8"}
 
 
 def test_table_to_html_escapes_cell_content() -> None:
